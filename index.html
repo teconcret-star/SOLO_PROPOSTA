@@ -19,38 +19,46 @@
         
         .card { background: white; margin: 10px; padding: 15px; border-radius: 8px; border: 1px solid #ddd; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         h3 { margin-top: 0; color: var(--primary); border-left: 5px solid var(--primary); padding-left: 10px; font-size: 1.1rem; }
+        
         .field { margin-bottom: 10px; }
         label { display: block; font-size: 0.8rem; font-weight: bold; margin-bottom: 4px; color: var(--primary); }
-        input, select, textarea { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem; }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
+        
         .row { display: flex; gap: 10px; } .col { flex: 1; }
-        .btn { background: var(--primary); color: white; border: none; padding: 15px; width: 100%; border-radius: 6px; font-weight: bold; cursor: pointer; text-transform: uppercase; margin-top: 5px; }
-        .table-container { overflow-x: auto; margin-top: 15px; background: white; border-radius: 8px; border: 1px solid #ddd; }
+        .btn { background: var(--primary); color: white; border: none; padding: 12px; width: 100%; border-radius: 4px; font-weight: bold; cursor: pointer; text-transform: uppercase; margin-top: 5px; }
+
+        .table-container { overflow-x: auto; margin-top: 15px; background: white; border-radius: 4px; border: 1px solid #ddd; }
         table.app-table { width: 100%; border-collapse: collapse; min-width: 600px; }
         table.app-table th { background: #f8f9fa; padding: 10px; text-align: left; font-size: 0.75rem; border-bottom: 2px solid #eee; }
         table.app-table td { padding: 10px; border-bottom: 1px solid #eee; font-size: 0.85rem; }
-        .badge { padding: 3px 6px; border-radius: 4px; color: white; font-size: 0.7rem; font-weight: bold; }
+
+        .badge { padding: 4px 8px; border-radius: 4px; color: white; font-size: 0.7rem; font-weight: bold; }
         .bg-andamento { background: var(--status-andamento); }
         .bg-fechada { background: var(--status-fechada); }
         .bg-perdida { background: var(--status-perdida); }
-        .actions { display: flex; gap: 10px; font-size: 1.2rem; cursor: pointer; }
-        .nav-bar { position: fixed; bottom: 0; width: 100%; background: white; display: flex; border-top: 2px solid #eee; height: 75px; z-index: 100; }
-        .nav-item { flex: 1; text-align: center; padding: 12px; color: #999; background: none; border: none; font-size: 0.7rem; font-weight: bold; }
-        .nav-item.active { color: var(--primary); border-top: 4px solid var(--primary); }
+        .actions { display: flex; gap: 10px; cursor: pointer; font-size: 1.2rem; }
+
+        /* Navegação */
+        .nav-bar { position: fixed; bottom: 0; width: 100%; background: white; display: flex; border-top: 2px solid #eee; height: 70px; z-index: 100; }
+        .nav-item { flex: 1; text-align: center; padding: 10px; color: #999; background: none; border: none; font-size: 0.7rem; font-weight: bold; cursor: pointer; }
+        .nav-item.active { color: var(--primary); border-top: 3px solid var(--primary); }
+
         .section { display: none; } .section.active { display: block; }
 
+        /* Documento Impressão */
         #doc-impressao { display: none; }
-
         @media print {
+            @page { margin: 0.5cm; size: A4; }
+            body { background: white !important; }
             .no-print, .nav-bar { display: none !important; }
-            #doc-impressao { display: block !important; padding: 30px; background: white; color: black; font-size: 12px; line-height: 1.4; }
-            /* Ajuste do novo logo na impressão */
-            .print-logo { width: 100px; height: 100px; margin-bottom: 15px; object-fit: contain; }
-            .print-table { width: 100%; border-collapse: collapse; margin: 15px 0; }
-            .print-table th, .print-table td { border: 1px solid black; padding: 6px; text-align: center; }
-            .section-title { font-weight: bold; text-decoration: underline; margin-top: 15px; text-transform: uppercase; }
+            #doc-impressao { display: block !important; padding: 10px; color: black; font-size: 11px; line-height: 1.3; }
+            .print-logo { width: 100px; height: 100px; margin-bottom: 10px; object-fit: contain; }
+            .print-table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+            .print-table th { background: var(--primary) !important; color: white !important; border: 1px solid black; padding: 6px; }
+            .print-table td { border: 1px solid black; padding: 6px; text-align: center; }
+            .section-title { font-weight: bold; text-decoration: underline; margin-top: 10px; text-transform: uppercase; background: #eee !important; padding: 2px; }
             .list-item { margin: 2px 0; }
-            .list-item::before { content: "❑ "; }
-            .signature-area { margin-top: 40px; display: flex; justify-content: space-between; }
+            .signature-area { margin-top: 30px; display: flex; justify-content: space-between; }
             .sig-box { width: 45%; border-top: 1px solid black; text-align: center; padding-top: 5px; }
         }
     </style>
@@ -72,10 +80,12 @@
             <div class="col"><input type="text" id="num" class="field" placeholder="Nº"></div>
         </div>
         <input type="text" id="end" class="field" placeholder="Endereço">
-        <input type="text" id="comp" class="field" placeholder="Complemento (Bloco, Ap, Casa, Obra)">
+        <input type="text" id="comp" class="field" placeholder="Complemento (Bloco, Obra...)">
         <input type="tel" id="tel_c" class="field" placeholder="Contato" maxlength="15" onkeyup="mascaraTel(this)">
         <button class="btn" id="btn_cli" onclick="salvarC()">SALVAR CLIENTE</button>
         
+        <button class="btn" style="background:#28a745; margin-top:10px;" onclick="exportarClientesExcel()">📥 EXPORTAR CLIENTES (EXCEL)</button>
+
         <div class="table-container">
             <table class="app-table">
                 <thead><tr><th>Data</th><th>Cliente</th><th>Ações</th></tr></thead>
@@ -89,9 +99,9 @@
     <div class="card">
         <h3>Proposta Comercial</h3>
         <input type="hidden" id="idx_p" value="-1">
-        
         <div class="row">
-            <div class="col"><label>Unidade</label>
+            <div class="col">
+                <label>Unidade</label>
                 <select id="filial" class="field">
                     <option>Divinopolis</option><option>Uberlandia</option><option>Manhuaçu</option>
                     <option>Betim</option><option>Itauna</option><option>Itatiaiuçu</option>
@@ -101,7 +111,7 @@
             <div class="col"><label>Cliente</label><select id="selC" class="field"></select></div>
         </div>
 
-        <div style="background: #f1f1f1; padding: 12px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #ddd;">
+        <div style="background: #f1f1f1; padding: 10px; border-radius: 4px; border: 1px solid #ddd; margin-bottom: 10px;">
             <label>Itens da Proposta (FCK)</label>
             <div class="row">
                 <div class="col"><select id="fck" class="field"></select></div>
@@ -112,13 +122,13 @@
                 <div class="col"><input type="number" id="margem" placeholder="Margem %" value="0"></div>
             </div>
             <button class="btn" style="background:#555; font-size:0.8rem;" onclick="addLinha()">+ ADICIONAR ITEM</button>
-            <table style="width:100%; margin-top:10px; font-size:0.8rem; background:white; border-collapse: collapse;">
+            <table style="width:100%; margin-top:10px; font-size:0.8rem; background:white;">
                 <thead><tr style="background:#eee"><th>FCK</th><th>Brita</th><th>Valor</th><th>Ação</th></tr></thead>
                 <tbody id="itensTmp"></tbody>
             </table>
         </div>
 
-        <div style="background: #fff9db; padding: 12px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #fab005;">
+        <div style="background: #fff9db; padding: 10px; border-radius: 4px; border: 1px solid #fab005; margin-bottom: 10px;">
             <label style="color: #856404; font-weight: bold;">Adicionais e Condições</label>
             <div class="row">
                 <div class="col"><label>Bomba (R$/m³)</label><input type="text" id="cfg_bomba" value="60,00"></div>
@@ -157,9 +167,10 @@
             </div>
         </div>
         <textarea id="obs" class="field" rows="2" placeholder="Observações extras..."></textarea>
-        
         <button class="btn" id="btn_prop" onclick="salvarP()">SALVAR PROPOSTA</button>
-        <button class="btn" style="background:#444; margin-top:10px;" onclick="imprimir()">IMPRIMIR LAYOUT</button>
+        <button class="btn" style="background:#444; margin-top:10px;" onclick="imprimir()">GERAR PDF / IMPRIMIR</button>
+        
+        <button class="btn" style="background:#28a745; margin-top:10px;" onclick="exportarPropostasExcel()">📥 EXPORTAR PROPOSTAS (EXCEL)</button>
 
         <div class="table-container">
             <table class="app-table">
@@ -182,48 +193,41 @@
 <div id="doc-impressao">
     <img src="logotipo.webp" class="print-logo">
     <div contenteditable="true">
-        <p><span id="p_cidade"></span>, MG, <span id="p_data"></span></p><br>
+        <p><span id="p_cidade"></span>, MG, <span id="p_data"></span></p>
         <p><strong>À <span id="p_cliente"></span></strong></p>
-        <p>OBRA: <span id="p_obra"></span></p><br>
-        <p><strong>A/C: <span id="p_responsavel"></span></strong></p><br>
-        <p>Senhores, segue proposta para prestação de serviços de concretagem para a obra acima.</p>
+        <p>OBRA: <span id="p_obra"></span></p>
+        <p><strong>A/C: <span id="p_responsavel"></span></strong></p>
     </div>
 
     <div class="section-title">TRAÇO</div>
     <table class="print-table">
         <thead><tr><th>FCK</th><th>BRITA</th><th>SLUMP</th><th>PREÇO (R$/m³)</th></tr></thead>
-        <tbody id="p_tabela_itens" contenteditable="true"></tbody>
+        <tbody id="p_tabela_itens"></tbody>
     </table>
 
-    <div class="section-title">ADICIONAIS</div>
-    <div contenteditable="true">
+    <div class="section-title">ADICIONAIS E CONDIÇÕES</div>
+    <div>
         <div class="list-item">Taxa de bomba: R$ <span id="pr_bomba"></span>/m³ (mínimo de <span id="pr_min_b"></span> m³)</div>
         <div class="list-item">Adição de fibra: R$ <span id="pr_fibra"></span>/m³</div>
         <div class="list-item">M3 faltante: R$ <span id="pr_faltante"></span>/m³ abaixo de 5 m³</div>
-        <div class="list-item">Adicional de permanencia R$ <span id="pr_perm"></span> por hora acima de 120 mim na obra.</div>
-        <div class="list-item">2ª a 6ª feira após as 18h00: <span id="pr_h_uteis"></span></div>
-        <div class="list-item">Sábados após as 12h00: <span id="pr_h_sab"></span></div>
-        <div class="list-item">Domingos e Feriados: <span id="pr_h_dom"></span> (mínimo de <span id="pr_min_dom"></span>)</div>
-    </div>
-
-    <div class="section-title">CONDIÇÕES</div>
-    <div contenteditable="true">
-        <div class="list-item">Reajuste Automático de Cimento (RAC): <span id="pr_rac"></span></div>
-        <div class="list-item">Reajuste de Outros Custos (ROC): <span id="pr_roc"></span></div>
-        <div class="list-item">Prazo de Pagamento: <span id="pr_prazo"></span></div>
+        <div class="list-item">Permanência: R$ <span id="pr_perm"></span>/hora após 120 min.</div>
+        <div class="list-item">2ª a 6ª após 18h: <span id="pr_h_uteis"></span> | Sábados após 12h: <span id="pr_h_sab"></span></div>
+        <div class="list-item">Domingos/Feriados: <span id="pr_h_dom"></span> (Mín. <span id="pr_min_dom"></span>)</div>
+        <div class="list-item">RAC: <span id="pr_rac"></span> | ROC: <span id="pr_roc"></span></div>
+        <div class="list-item">Pagamento: <span id="pr_prazo"></span></div>
         <div class="list-item">Obs: <span id="p_obs"></span></div>
     </div>
 
     <div class="signature-area">
-        <div class="sig-box" contenteditable="true">Atenciosamente,<br><strong><span id="p_vend"></span></strong><br><span id="p_v_cel"></span></div>
+        <div class="sig-box">Atenciosamente,<br><strong><span id="p_vend"></span></strong><br><span id="p_v_cel"></span></div>
         <div class="sig-box">Aceite do Cliente<br>Data: ___/___/___</div>
     </div>
 </div>
 
 <nav class="nav-bar no-print">
-    <button class="nav-item active" id="btn-agenda" onclick="tab('agenda')">AGENDA</button>
-    <button class="nav-item" id="btn-proposta" onclick="tab('proposta')">PROPOSTA</button>
-    <button class="nav-item" id="btn-vendedor" onclick="tab('vendedor')">PERFIL</button>
+    <button class="nav-item active" onclick="tab('agenda')">AGENDA</button>
+    <button class="nav-item" onclick="tab('proposta')">PROPOSTA</button>
+    <button class="nav-item" onclick="tab('vendedor')">PERFIL</button>
 </nav>
 
 <script>
@@ -243,7 +247,7 @@
         document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         document.getElementById(id).classList.add('active');
-        document.getElementById('btn-'+id).classList.add('active');
+        event.currentTarget.classList.add('active');
     }
 
     async function autoCEP(v) {
@@ -263,7 +267,8 @@
     }
 
     function renderItens() {
-        const t = document.getElementById('itensTmp'); t.innerHTML = '';
+        const t = document.getElementById('itensTmp');
+        t.innerHTML = '';
         itensProposta.forEach((it, i) => {
             t.innerHTML += `<tr><td>${it.fck}</td><td>${it.brita}</td><td>R$ ${it.preco.toFixed(2)}</td><td onclick="itensProposta.splice(${i},1);renderItens()">❌</td></tr>`;
         });
@@ -283,7 +288,17 @@
         };
         if(idx == "-1") db.push(obj); else db[idx] = obj;
         localStorage.setItem('solomix_c', JSON.stringify(db));
-        atualizarC(); limparC();
+        atualizarC(); limparC(); alert("Cliente salvo!");
+    }
+
+    function atualizarC() {
+        const db = JSON.parse(localStorage.getItem('solomix_c') || '[]');
+        const s = document.getElementById('selC'); const l = document.getElementById('listaC');
+        s.innerHTML = '<option value="">Selecionar Cliente...</option>'; l.innerHTML = '';
+        db.forEach((c, i) => {
+            s.innerHTML += `<option value="${i}">${c.nome}</option>`;
+            l.innerHTML += `<tr><td>${c.data}</td><td>${c.nome}</td><td class="actions"><span onclick="editarC(${i})">✏️</span><span onclick="excluirC(${i})">🗑️</span></td></tr>`;
+        });
     }
 
     function editarC(i) {
@@ -298,18 +313,7 @@
         document.getElementById('btn_cli').innerText = "ATUALIZAR";
     }
 
-    function atualizarC() {
-        const db = JSON.parse(localStorage.getItem('solomix_c') || '[]');
-        const s = document.getElementById('selC'); const l = document.getElementById('listaC');
-        s.innerHTML = '<option value="">Selecionar Cliente...</option>'; l.innerHTML = '';
-        db.forEach((c, i) => {
-            s.innerHTML += `<option value="${i}">${c.nome}</option>`;
-            l.innerHTML += `<tr><td>${c.data}</td><td>${c.nome}</td><td class="actions"><span onclick="editarC(${i})">✏️</span><span onclick="excluirC(${i})">🗑️</span></td></tr>`;
-        });
-    }
-
     function excluirC(i) { if(confirm("Excluir cliente?")) { let db = JSON.parse(localStorage.getItem('solomix_c')); db.splice(i,1); localStorage.setItem('solomix_c', JSON.stringify(db)); atualizarC(); } }
-
     function limparC() { document.getElementById('idx_c').value = "-1"; document.getElementById('btn_cli').innerText = "SALVAR CLIENTE"; ['nome','tel_c','end','num','comp','cep','doc_c'].forEach(id => document.getElementById(id).value = ""); }
 
     function salvarP() {
@@ -323,7 +327,18 @@
         };
         if(idx == "-1") db.push(obj); else db[idx] = obj;
         localStorage.setItem('solomix_p', JSON.stringify(db));
-        listarP(); limparP(); alert("Salvo!");
+        listarP(); alert("Proposta salva!");
+    }
+
+    function listarP() {
+        const dbP = JSON.parse(localStorage.getItem('solomix_p') || '[]');
+        const dbC = JSON.parse(localStorage.getItem('solomix_c') || '[]');
+        const l = document.getElementById('listaP'); l.innerHTML = '';
+        dbP.slice().reverse().forEach((p, i) => {
+            const rIdx = dbP.length - 1 - i;
+            const nomeCli = dbC[p.cliIdx] ? dbC[p.cliIdx].nome : "Excluído";
+            l.innerHTML += `<tr><td>${p.data}</td><td>${nomeCli}</td><td><span class="badge bg-${p.status}">${p.status}</span></td><td class="actions"><span onclick="editarP(${rIdx})">✏️</span><span onclick="excluirP(${rIdx})">🗑️</span></td></tr>`;
+        });
     }
 
     function editarP(i) {
@@ -342,20 +357,7 @@
         document.getElementById('idx_p').value = i; document.getElementById('btn_prop').innerText = "ATUALIZAR";
     }
 
-    function listarP() {
-        const dbP = JSON.parse(localStorage.getItem('solomix_p') || '[]');
-        const dbC = JSON.parse(localStorage.getItem('solomix_c') || '[]');
-        const l = document.getElementById('listaP'); l.innerHTML = '';
-        dbP.slice().reverse().forEach((p, i) => {
-            const rIdx = dbP.length - 1 - i;
-            const nomeCli = dbC[p.cliIdx] ? dbC[p.cliIdx].nome : "Excluído";
-            l.innerHTML += `<tr><td>${p.data}</td><td>${nomeCli}</td><td><span class="badge bg-${p.status}">${p.status}</span></td><td class="actions"><span onclick="editarP(${rIdx})">✏️</span><span onclick="excluirP(${rIdx})">🗑️</span></td></tr>`;
-        });
-    }
-
     function excluirP(i) { if(confirm("Excluir proposta?")) { let db = JSON.parse(localStorage.getItem('solomix_p')); db.splice(i,1); localStorage.setItem('solomix_p', JSON.stringify(db)); listarP(); } }
-
-    function limparP() { document.getElementById('idx_p').value = "-1"; document.getElementById('btn_prop').innerText = "SALVAR PROPOSTA"; itensProposta = []; renderItens(); }
 
     function imprimir() {
         const cliIdx = document.getElementById('selC').value;
@@ -394,6 +396,38 @@
     function salvarV() { localStorage.setItem('solomix_v', JSON.stringify({ nome: document.getElementById('v_nome').value, cel: document.getElementById('v_cel').value })); alert("Perfil Salvo!"); }
 
     window.onload = () => { atualizarC(); listarP(); const v = JSON.parse(localStorage.getItem('solomix_v')||'{}'); document.getElementById('v_nome').value=v.nome||''; document.getElementById('v_cel').value=v.cel||''; };
+
+    // FUNÇÕES ADICIONADAS PARA EXPORTAR EXCEL
+    function exportarClientesExcel() {
+        const db = JSON.parse(localStorage.getItem('solomix_c') || '[]');
+        if (db.length === 0) return alert("Não há clientes cadastrados.");
+        let csv = "\ufeffData;Nome;Documento;Telefone;Endereco;Numero;Complemento\n";
+        db.forEach(c => {
+            csv += `${c.data};${c.nome};${c.doc || ''};${c.tel};${c.end};${c.num};${c.comp || ''}\n`;
+        });
+        baixarCSV(csv, "clientes_solomix.csv");
+    }
+
+    function exportarPropostasExcel() {
+        const dbP = JSON.parse(localStorage.getItem('solomix_p') || '[]');
+        const dbC = JSON.parse(localStorage.getItem('solomix_c') || '[]');
+        if (dbP.length === 0) return alert("Não há propostas cadastradas.");
+        let csv = "\ufeffData;Cliente;Filial;Status;Responsavel;Valor_Total\n";
+        dbP.forEach(p => {
+            const nomeCli = dbC[p.cliIdx] ? dbC[p.cliIdx].nome : "Excluido";
+            const total = p.itens.reduce((acc, it) => acc + it.preco, 0).toFixed(2);
+            csv += `${p.data};${nomeCli};${p.filial};${p.status};${p.resp};${total}\n`;
+        });
+        baixarCSV(csv, "propostas_solomix.csv");
+    }
+
+    function baixarCSV(csv, nome) {
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = nome;
+        link.click();
+    }
 </script>
 </body>
 </html>
