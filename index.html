@@ -6,15 +6,18 @@
     <title>Solomix - Sistema Comercial</title>
     <style>
         :root { 
-            --primary: #2d6a4f; --solomix-green: #8cc63f; --bg: #f4f7f6; 
-            --status-andamento: #f1c40f; --status-fechada: #27ae60; --status-perdida: #e74c3c;
+            --primary: #2d6a4f;
+            --solomix-green: #8cc63f;
+            --bg: #f4f7f6; 
+            --status-andamento: #f1c40f;
+            --status-fechada: #27ae60;
+            --status-perdida: #e74c3c;
             --edit: #1565c0;
         }
         * { box-sizing: border-box; font-family: Arial, sans-serif; }
         body { background-color: var(--bg); margin: 0; padding-bottom: 90px; }
         .no-print { display: block; }
         .header-app { background: white; padding: 10px; text-align: center; border-bottom: 3px solid var(--solomix-green); }
-        /* Ajuste do novo logo na interface */
         .logo-app { width: 80px; height: 80px; object-fit: contain; }
         
         .card { background: white; margin: 10px; padding: 15px; border-radius: 8px; border: 1px solid #ddd; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
@@ -24,12 +27,22 @@
         label { display: block; font-size: 0.8rem; font-weight: bold; margin-bottom: 4px; color: var(--primary); }
         input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
         
-        .row { display: flex; gap: 10px; } .col { flex: 1; }
+        .row { display: flex; gap: 10px; } 
+        .col { flex: 1; }
+
         .btn { background: var(--primary); color: white; border: none; padding: 12px; width: 100%; border-radius: 4px; font-weight: bold; cursor: pointer; text-transform: uppercase; margin-top: 5px; }
 
         .table-container { overflow-x: auto; margin-top: 15px; background: white; border-radius: 4px; border: 1px solid #ddd; }
         table.app-table { width: 100%; border-collapse: collapse; min-width: 600px; }
-        table.app-table th { background: #f8f9fa; padding: 10px; text-align: left; font-size: 0.75rem; border-bottom: 2px solid #eee; }
+        table.app-table th { 
+            background: #e9ecef; 
+            padding: 10px; 
+            text-align: left; 
+            font-size: 0.75rem; 
+            border-bottom: 2px solid #ddd;
+            font-weight: bold;
+            color: #333;
+        }
         table.app-table td { padding: 10px; border-bottom: 1px solid #eee; font-size: 0.85rem; }
 
         .badge { padding: 4px 8px; border-radius: 4px; color: white; font-size: 0.7rem; font-weight: bold; }
@@ -38,28 +51,71 @@
         .bg-perdida { background: var(--status-perdida); }
         .actions { display: flex; gap: 10px; cursor: pointer; font-size: 1.2rem; }
 
-        /* Navegação */
         .nav-bar { position: fixed; bottom: 0; width: 100%; background: white; display: flex; border-top: 2px solid #eee; height: 70px; z-index: 100; }
         .nav-item { flex: 1; text-align: center; padding: 10px; color: #999; background: none; border: none; font-size: 0.7rem; font-weight: bold; cursor: pointer; }
         .nav-item.active { color: var(--primary); border-top: 3px solid var(--primary); }
 
-        .section { display: none; } .section.active { display: block; }
+        .section { display: none; } 
+        .section.active { display: block; }
 
-        /* Documento Impressão */
         #doc-impressao { display: none; }
+        #doc-programacao { display: none; }
+
+        .prog-box {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 10px;
+        }
+        .prog-title {
+            font-size: 1rem;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 10px;
+            color: var(--primary);
+            text-transform: uppercase;
+        }
+        .prog-line {
+            margin: 4px 0;
+            font-size: 0.95rem;
+        }
+
         @media print {
             @page { margin: 0.5cm; size: A4; }
             body { background: white !important; }
             .no-print, .nav-bar { display: none !important; }
-            #doc-impressao { display: block !important; padding: 10px; color: black; font-size: 11px; line-height: 1.3; }
+            #doc-impressao, #doc-programacao { display: block !important; padding: 10px; color: black; font-size: 11px; line-height: 1.3; }
             .print-logo { width: 100px; height: 100px; margin-bottom: 10px; object-fit: contain; }
             .print-table { width: 100%; border-collapse: collapse; margin: 10px 0; }
-            .print-table th { background: var(--primary) !important; color: white !important; border: 1px solid black; padding: 6px; }
+            .print-table th { 
+                background: #e9ecef !important; 
+                color: #333 !important; 
+                border: 1px solid black; 
+                padding: 6px;
+                font-weight: bold;
+            }
             .print-table td { border: 1px solid black; padding: 6px; text-align: center; }
             .section-title { font-weight: bold; text-decoration: underline; margin-top: 10px; text-transform: uppercase; background: #eee !important; padding: 2px; }
             .list-item { margin: 2px 0; }
             .signature-area { margin-top: 30px; display: flex; justify-content: space-between; }
             .sig-box { width: 45%; border-top: 1px solid black; text-align: center; padding-top: 5px; }
+
+            #doc-programacao .prog-box {
+                border: 1px solid #000;
+                padding: 10px;
+                margin-bottom: 10px;
+            }
+            #doc-programacao .prog-title {
+                font-size: 14px;
+                font-weight: bold;
+                text-align: center;
+                margin-bottom: 10px;
+                text-transform: uppercase;
+            }
+            #doc-programacao .prog-line {
+                margin: 4px 0;
+            }
         }
     </style>
 </head>
@@ -83,7 +139,6 @@
         <input type="text" id="comp" class="field" placeholder="Complemento (Bloco, Obra...)">
         <input type="tel" id="tel_c" class="field" placeholder="Contato" maxlength="15" onkeyup="mascaraTel(this)">
         <button class="btn" id="btn_cli" onclick="salvarC()">SALVAR CLIENTE</button>
-        
         <button class="btn" style="background:#28a745; margin-top:10px;" onclick="exportarClientesExcel()">📥 EXPORTAR CLIENTES (EXCEL)</button>
 
         <div class="table-container">
@@ -113,6 +168,14 @@
 
         <div style="background: #f1f1f1; padding: 10px; border-radius: 4px; border: 1px solid #ddd; margin-bottom: 10px;">
             <label>Itens da Proposta (FCK)</label>
+
+            <div class="row">
+                <div class="col">
+                    <label>Volume de Concreto (m³)</label>
+                    <input type="number" id="volume" class="field" placeholder="Ex: 10" min="0" step="0.01">
+                </div>
+            </div>
+
             <div class="row">
                 <div class="col"><select id="fck" class="field"></select></div>
                 <div class="col"><select id="brita" class="field"><option>0+1</option><option>0</option><option>1</option></select></div>
@@ -123,7 +186,15 @@
             </div>
             <button class="btn" style="background:#555; font-size:0.8rem;" onclick="addLinha()">+ ADICIONAR ITEM</button>
             <table style="width:100%; margin-top:10px; font-size:0.8rem; background:white;">
-                <thead><tr style="background:#eee"><th>FCK</th><th>Brita</th><th>Valor</th><th>Ação</th></tr></thead>
+                <thead>
+                    <tr style="background:#e9ecef; font-weight:bold;">
+                        <th style="font-weight:bold;">Volume</th>
+                        <th style="font-weight:bold;">FCK</th>
+                        <th style="font-weight:bold;">Brita</th>
+                        <th style="font-weight:bold;">Valor</th>
+                        <th style="font-weight:bold;">Ação</th>
+                    </tr>
+                </thead>
                 <tbody id="itensTmp"></tbody>
             </table>
         </div>
@@ -169,13 +240,134 @@
         <textarea id="obs" class="field" rows="2" placeholder="Observações extras..."></textarea>
         <button class="btn" id="btn_prop" onclick="salvarP()">SALVAR PROPOSTA</button>
         <button class="btn" style="background:#444; margin-top:10px;" onclick="imprimir()">GERAR PDF / IMPRIMIR</button>
-        
         <button class="btn" style="background:#28a745; margin-top:10px;" onclick="exportarPropostasExcel()">📥 EXPORTAR PROPOSTAS (EXCEL)</button>
 
         <div class="table-container">
             <table class="app-table">
                 <thead><tr><th>Data</th><th>Cliente</th><th>Status</th><th>Ações</th></tr></thead>
                 <tbody id="listaP"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="programacao" class="section no-print">
+    <div class="card">
+        <h3>Programação</h3>
+        <input type="hidden" id="idx_prog" value="-1">
+
+        <div class="row">
+            <div class="col">
+                <label>Cliente</label>
+                <select id="selProgC" class="field" onchange="carregarClienteProgramacao(this.value)"></select>
+            </div>
+            <div class="col">
+                <label>Nome da Obra</label>
+                <input type="text" id="prog_obra_nome" class="field" placeholder="Nome da obra">
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col">
+                <label>Contrato</label>
+                <input type="text" id="prog_contrato" class="field" placeholder="Contrato">
+            </div>
+            <div class="col">
+                <label>Solicitante</label>
+                <input type="text" id="prog_solicitante" class="field" placeholder="Solicitante">
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col">
+                <label>CNO</label>
+                <input type="text" id="prog_cno" class="field" placeholder="CNO">
+            </div>
+            <div class="col">
+                <label>Email</label>
+                <input type="email" id="prog_email" class="field" placeholder="Email">
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col">
+                <label>Contato da Obra</label>
+                <input type="tel" id="prog_contato_obra" class="field" placeholder="Contato da obra">
+            </div>
+            <div class="col">
+                <label>Volume</label>
+                <input type="text" id="prog_volume" class="field" placeholder="Ex: 16 m³">
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col">
+                <label>FCK</label>
+                <input type="text" id="prog_fck" class="field" placeholder="Ex: 15 MPa">
+            </div>
+            <div class="col">
+                <label>SLP</label>
+                <input type="text" id="prog_slp" class="field" placeholder="Ex: 12+-2">
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col">
+                <label>Brita</label>
+                <input type="text" id="prog_brita" class="field" placeholder="Ex: B mista">
+            </div>
+            <div class="col">
+                <label>Preço Concreto (R$)</label>
+                <input type="text" id="prog_preco" class="field" placeholder="Ex: 490,00">
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col">
+                <label>Bomba (R$)</label>
+                <input type="text" id="prog_bomba" class="field" placeholder="Ex: 80,00">
+            </div>
+            <div class="col">
+                <label>Forma de Pagamento</label>
+                <input type="text" id="prog_pagamento" class="field" placeholder="Ex: Boleto 28 dias">
+            </div>
+        </div>
+
+        <label>Endereço da Obra</label>
+        <textarea id="prog_end_obra" class="field" rows="2" placeholder="Endereço da obra"></textarea>
+
+        <label>Observações</label>
+        <textarea id="prog_obs" class="field" rows="3" placeholder="Observações da programação"></textarea>
+
+        <button class="btn" onclick="salvarProgramacao()">SALVAR PROGRAMAÇÃO</button>
+        <button class="btn" style="background:#444; margin-top:10px;" onclick="gerarTxtProgramacao()">GERAR TXT</button>
+
+        <div class="prog-box">
+            <div class="prog-title">Extrato da Programação</div>
+            <div class="prog-line"><strong>Nome da Obra:</strong> <span id="pp_obra_nome"></span></div>
+            <div class="prog-line"><strong>Contrato:</strong> <span id="pp_contrato"></span></div>
+            <div class="prog-line"><strong>Cliente:</strong> <span id="pp_cliente"></span></div>
+            <div class="prog-line"><strong>CNPJ:</strong> <span id="pp_cnpj"></span></div>
+            <div class="prog-line"><strong>Endereço Cliente:</strong> <span id="pp_end_cliente"></span></div>
+            <div class="prog-line"><strong>CNO:</strong> <span id="pp_cno"></span></div>
+            <div class="prog-line"><strong>Email:</strong> <span id="pp_email"></span></div>
+            <div class="prog-line"><strong>Contato da Obra:</strong> <span id="pp_contato_obra"></span></div>
+            <div class="prog-line"><strong>Solicitante:</strong> <span id="pp_solicitante"></span></div>
+            <div class="prog-line"><strong>End. Obra:</strong> <span id="pp_end_obra"></span></div>
+            <div class="prog-line"><strong>FCK:</strong> <span id="pp_fck"></span></div>
+            <div class="prog-line"><strong>SLP:</strong> <span id="pp_slp"></span></div>
+            <div class="prog-line"><strong>Brita:</strong> <span id="pp_brita"></span></div>
+            <div class="prog-line"><strong>Preço:</strong> R$ <span id="pp_preco"></span></div>
+            <div class="prog-line"><strong>Bomba:</strong> R$ <span id="pp_bomba"></span></div>
+            <div class="prog-line"><strong>Volume:</strong> <span id="pp_volume"></span></div>
+            <div class="prog-line"><strong>Forma de Pagamento:</strong> <span id="pp_pagamento"></span></div>
+            <div class="prog-line"><strong>Observação:</strong> <span id="pp_obs"></span></div>
+        </div>
+
+        <div class="table-container">
+            <table class="app-table">
+                <thead><tr><th>Data</th><th>Cliente</th><th>Obra</th><th>Ações</th></tr></thead>
+                <tbody id="listaProg"></tbody>
             </table>
         </div>
     </div>
@@ -201,7 +393,15 @@
 
     <div class="section-title">TRAÇO</div>
     <table class="print-table">
-        <thead><tr><th>FCK</th><th>BRITA</th><th>SLUMP</th><th>PREÇO (R$/m³)</th></tr></thead>
+        <thead>
+            <tr>
+                <th>VOLUME</th>
+                <th>FCK</th>
+                <th>BRITA</th>
+                <th>SLUMP</th>
+                <th>PREÇO (R$/m³)</th>
+            </tr>
+        </thead>
         <tbody id="p_tabela_itens"></tbody>
     </table>
 
@@ -225,9 +425,10 @@
 </div>
 
 <nav class="nav-bar no-print">
-    <button class="nav-item active" onclick="tab('agenda')">AGENDA</button>
-    <button class="nav-item" onclick="tab('proposta')">PROPOSTA</button>
-    <button class="nav-item" onclick="tab('vendedor')">PERFIL</button>
+    <button class="nav-item active" onclick="tab('agenda', this)">AGENDA</button>
+    <button class="nav-item" onclick="tab('proposta', this)">PROPOSTA</button>
+    <button class="nav-item" onclick="tab('programacao', this)">PROGRAMAÇÃO</button>
+    <button class="nav-item" onclick="tab('vendedor', this)">PERFIL</button>
 </nav>
 
 <script>
@@ -243,11 +444,12 @@
         i.value = v;
     }
 
-    function tab(id) {
+    function tab(id, btn) {
         document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
-        event.currentTarget.classList.add('active');
+        const sec = document.getElementById(id);
+        if (sec) sec.classList.add('active');
+        if (btn) btn.classList.add('active');
     }
 
     async function autoCEP(v) {
@@ -259,10 +461,17 @@
     }
 
     function addLinha() {
+        const volume = parseFloat(document.getElementById('volume').value) || 0;
         const base = parseFloat(document.getElementById('vBase').value) || 0;
         const margem = parseFloat(document.getElementById('margem').value) || 0;
+        if(volume <= 0) return alert("Insira o volume!");
         if(base <= 0) return alert("Insira um valor!");
-        itensProposta.push({ fck: document.getElementById('fck').value, brita: document.getElementById('brita').value, preco: base * (1 + margem/100) });
+        itensProposta.push({ 
+            volume: volume, 
+            fck: document.getElementById('fck').value, 
+            brita: document.getElementById('brita').value, 
+            preco: base * (1 + margem/100) 
+        });
         renderItens();
     }
 
@@ -270,7 +479,13 @@
         const t = document.getElementById('itensTmp');
         t.innerHTML = '';
         itensProposta.forEach((it, i) => {
-            t.innerHTML += `<tr><td>${it.fck}</td><td>${it.brita}</td><td>R$ ${it.preco.toFixed(2)}</td><td onclick="itensProposta.splice(${i},1);renderItens()">❌</td></tr>`;
+            t.innerHTML += `<tr>
+                <td>${it.volume}</td>
+                <td>${it.fck}</td>
+                <td>${it.brita}</td>
+                <td>R$ ${it.preco.toFixed(2)}</td>
+                <td onclick="itensProposta.splice(${i},1);renderItens()">❌</td>
+            </tr>`;
         });
     }
 
@@ -293,10 +508,15 @@
 
     function atualizarC() {
         const db = JSON.parse(localStorage.getItem('solomix_c') || '[]');
-        const s = document.getElementById('selC'); const l = document.getElementById('listaC');
-        s.innerHTML = '<option value="">Selecionar Cliente...</option>'; l.innerHTML = '';
+        const s = document.getElementById('selC');
+        const sp = document.getElementById('selProgC');
+        const l = document.getElementById('listaC');
+        s.innerHTML = '<option value="">Selecionar Cliente...</option>';
+        sp.innerHTML = '<option value="">Selecionar Cliente...</option>';
+        l.innerHTML = '';
         db.forEach((c, i) => {
             s.innerHTML += `<option value="${i}">${c.nome}</option>`;
+            sp.innerHTML += `<option value="${i}">${c.nome}</option>`;
             l.innerHTML += `<tr><td>${c.data}</td><td>${c.nome}</td><td class="actions"><span onclick="editarC(${i})">✏️</span><span onclick="excluirC(${i})">🗑️</span></td></tr>`;
         });
     }
@@ -313,17 +533,49 @@
         document.getElementById('btn_cli').innerText = "ATUALIZAR";
     }
 
-    function excluirC(i) { if(confirm("Excluir cliente?")) { let db = JSON.parse(localStorage.getItem('solomix_c')); db.splice(i,1); localStorage.setItem('solomix_c', JSON.stringify(db)); atualizarC(); } }
-    function limparC() { document.getElementById('idx_c').value = "-1"; document.getElementById('btn_cli').innerText = "SALVAR CLIENTE"; ['nome','tel_c','end','num','comp','cep','doc_c'].forEach(id => document.getElementById(id).value = ""); }
+    function excluirC(i) {
+        if(confirm("Excluir cliente?")) {
+            let db = JSON.parse(localStorage.getItem('solomix_c'));
+            db.splice(i,1);
+            localStorage.setItem('solomix_c', JSON.stringify(db));
+            atualizarC();
+        }
+    }
+
+    function limparC() {
+        document.getElementById('idx_c').value = "-1";
+        document.getElementById('btn_cli').innerText = "SALVAR CLIENTE";
+        ['nome','tel_c','end','num','comp','cep','doc_c'].forEach(id => document.getElementById(id).value = "");
+    }
 
     function salvarP() {
+        const cliente = document.getElementById('selC').value;
+        if(cliente === "") return alert("Selecione um cliente!");
         if(itensProposta.length === 0) return alert("Adicione itens!");
         let db = JSON.parse(localStorage.getItem('solomix_p') || '[]');
         const idx = document.getElementById('idx_p').value;
         const obj = {
-            data: new Date().toLocaleDateString('pt-BR'), cliIdx: document.getElementById('selC').value, status: document.getElementById('status').value, 
-            itens: [...itensProposta], resp: document.getElementById('contato_obra').value, filial: document.getElementById('filial').value, obs: document.getElementById('obs').value,
-            cfg: { b: document.getElementById('cfg_bomba').value, mb: document.getElementById('cfg_min_b').value, f: document.getElementById('cfg_fibra').value, fal: document.getElementById('cfg_faltante').value, p: document.getElementById('cfg_perm').value, rac: document.getElementById('cfg_rac').value, roc: document.getElementById('cfg_roc').value, prz: document.getElementById('cfg_prazo').value, hu: document.getElementById('cfg_h_uteis').value, hs: document.getElementById('cfg_h_sab').value, hd: document.getElementById('cfg_h_dom').value, md: document.getElementById('cfg_min_dom').value }
+            data: new Date().toLocaleDateString('pt-BR'),
+            cliIdx: cliente,
+            status: document.getElementById('status').value, 
+            itens: [...itensProposta],
+            resp: document.getElementById('contato_obra').value,
+            filial: document.getElementById('filial').value,
+            obs: document.getElementById('obs').value,
+            cfg: {
+                b: document.getElementById('cfg_bomba').value,
+                mb: document.getElementById('cfg_min_b').value,
+                f: document.getElementById('cfg_fibra').value,
+                fal: document.getElementById('cfg_faltante').value,
+                p: document.getElementById('cfg_perm').value,
+                rac: document.getElementById('cfg_rac').value,
+                roc: document.getElementById('cfg_roc').value,
+                prz: document.getElementById('cfg_prazo').value,
+                hu: document.getElementById('cfg_h_uteis').value,
+                hs: document.getElementById('cfg_h_sab').value,
+                hd: document.getElementById('cfg_h_dom').value,
+                md: document.getElementById('cfg_min_dom').value
+            }
         };
         if(idx == "-1") db.push(obj); else db[idx] = obj;
         localStorage.setItem('solomix_p', JSON.stringify(db));
@@ -343,61 +595,238 @@
 
     function editarP(i) {
         const p = JSON.parse(localStorage.getItem('solomix_p'))[i];
-        document.getElementById('selC').value = p.cliIdx; document.getElementById('status').value = p.status;
-        document.getElementById('contato_obra').value = p.resp; document.getElementById('filial').value = p.filial;
-        document.getElementById('obs').value = p.obs; itensProposta = [...p.itens]; renderItens();
+        document.getElementById('selC').value = p.cliIdx;
+        document.getElementById('status').value = p.status;
+        document.getElementById('contato_obra').value = p.resp;
+        document.getElementById('filial').value = p.filial;
+        document.getElementById('obs').value = p.obs;
+        itensProposta = [...p.itens];
+        renderItens();
         if(p.cfg) {
-            document.getElementById('cfg_bomba').value = p.cfg.b; document.getElementById('cfg_min_b').value = p.cfg.mb;
-            document.getElementById('cfg_fibra').value = p.cfg.f; document.getElementById('cfg_faltante').value = p.cfg.fal;
-            document.getElementById('cfg_perm').value = p.cfg.p; document.getElementById('cfg_rac').value = p.cfg.rac;
-            document.getElementById('cfg_roc').value = p.cfg.roc; document.getElementById('cfg_prazo').value = p.cfg.prz;
-            document.getElementById('cfg_h_uteis').value = p.cfg.hu; document.getElementById('cfg_h_sab').value = p.cfg.hs;
-            document.getElementById('cfg_h_dom').value = p.cfg.hd; document.getElementById('cfg_min_dom').value = p.cfg.md;
+            document.getElementById('cfg_bomba').value = p.cfg.b;
+            document.getElementById('cfg_min_b').value = p.cfg.mb;
+            document.getElementById('cfg_fibra').value = p.cfg.f;
+            document.getElementById('cfg_faltante').value = p.cfg.fal;
+            document.getElementById('cfg_perm').value = p.cfg.p;
+            document.getElementById('cfg_rac').value = p.cfg.rac;
+            document.getElementById('cfg_roc').value = p.cfg.roc;
+            document.getElementById('cfg_prazo').value = p.cfg.prz;
+            document.getElementById('cfg_h_uteis').value = p.cfg.hu;
+            document.getElementById('cfg_h_sab').value = p.cfg.hs;
+            document.getElementById('cfg_h_dom').value = p.cfg.hd;
+            document.getElementById('cfg_min_dom').value = p.cfg.md;
         }
-        document.getElementById('idx_p').value = i; document.getElementById('btn_prop').innerText = "ATUALIZAR";
+        document.getElementById('idx_p').value = i;
+        document.getElementById('btn_prop').innerText = "ATUALIZAR";
     }
 
-    function excluirP(i) { if(confirm("Excluir proposta?")) { let db = JSON.parse(localStorage.getItem('solomix_p')); db.splice(i,1); localStorage.setItem('solomix_p', JSON.stringify(db)); listarP(); } }
+    function excluirP(i) {
+        if(confirm("Excluir proposta?")) {
+            let db = JSON.parse(localStorage.getItem('solomix_p'));
+            db.splice(i,1);
+            localStorage.setItem('solomix_p', JSON.stringify(db));
+            listarP();
+        }
+    }
 
     function imprimir() {
-        const cliIdx = document.getElementById('selC').value;
-        if(cliIdx === "" || itensProposta.length === 0) return alert("Selecione o cliente!");
-        const cli = JSON.parse(localStorage.getItem('solomix_c'))[cliIdx];
-        const vend = JSON.parse(localStorage.getItem('solomix_v') || '{"nome":"","cel":""}');
+        try {
+            const cliIdx = document.getElementById('selC').value;
+            if (cliIdx === "" || itensProposta.length === 0) {
+                alert("Selecione o cliente e adicione itens!");
+                return;
+            }
 
-        document.getElementById('p_cidade').innerText = document.getElementById('filial').value;
-        document.getElementById('p_data').innerText = new Date().toLocaleDateString('pt-BR');
-        document.getElementById('p_cliente').innerText = cli.nome.toUpperCase();
-        document.getElementById('p_obra').innerText = `${cli.end}, ${cli.num} ${cli.comp ? '- ' + cli.comp : ''}`.toUpperCase();
-        document.getElementById('p_responsavel').innerText = document.getElementById('contato_obra').value || "RESPONSÁVEL";
-        
-        const tb = document.getElementById('p_tabela_itens'); tb.innerHTML = '';
-        itensProposta.forEach(it => { tb.innerHTML += `<tr><td>${it.fck}</td><td>${it.brita}</td><td>120±20</td><td>R$ ${it.preco.toFixed(2)}</td></tr>`; });
+            const cli = JSON.parse(localStorage.getItem('solomix_c') || '[]')[cliIdx] || {};
+            const vend = JSON.parse(localStorage.getItem('solomix_v') || '{"nome":"","cel":""}');
 
-        document.getElementById('pr_bomba').innerText = document.getElementById('cfg_bomba').value;
-        document.getElementById('pr_min_b').innerText = document.getElementById('cfg_min_b').value;
-        document.getElementById('pr_fibra').innerText = document.getElementById('cfg_fibra').value;
-        document.getElementById('pr_faltante').innerText = document.getElementById('cfg_faltante').value;
-        document.getElementById('pr_perm').innerText = document.getElementById('cfg_perm').value;
-        document.getElementById('pr_h_uteis').innerText = document.getElementById('cfg_h_uteis').value;
-        document.getElementById('pr_h_sab').innerText = document.getElementById('cfg_h_sab').value;
-        document.getElementById('pr_h_dom').innerText = document.getElementById('cfg_h_dom').value;
-        document.getElementById('pr_min_dom').innerText = document.getElementById('cfg_min_dom').value;
-        document.getElementById('pr_rac').innerText = document.getElementById('cfg_rac').value;
-        document.getElementById('pr_roc').innerText = document.getElementById('cfg_roc').value;
-        document.getElementById('pr_prazo').innerText = document.getElementById('cfg_prazo').value;
+            const cidadeEl = document.getElementById('p_cidade');
+            const dataEl = document.getElementById('p_data');
+            const clienteEl = document.getElementById('p_cliente');
+            const obraEl = document.getElementById('p_obra');
+            const respEl = document.getElementById('p_responsavel');
+            const tb = document.getElementById('p_tabela_itens');
 
-        document.getElementById('p_obs').innerText = document.getElementById('obs').value || "A COMBINAR";
-        document.getElementById('p_vend').innerText = vend.nome.toUpperCase(); 
-        document.getElementById('p_v_cel').innerText = vend.cel;
-        window.print();
+            if (!cidadeEl || !dataEl || !clienteEl || !obraEl || !respEl || !tb) {
+                alert("Estrutura de impressão não encontrada no HTML.");
+                return;
+            }
+
+            cidadeEl.innerText = document.getElementById('filial').value;
+            dataEl.innerText = new Date().toLocaleDateString('pt-BR');
+            clienteEl.innerText = (cli.nome || '').toUpperCase();
+            obraEl.innerText = `${cli.end || ''}, ${cli.num || ''} ${cli.comp ? '- ' + cli.comp : ''}`.toUpperCase();
+            respEl.innerText = document.getElementById('contato_obra').value || "RESPONSÁVEL";
+
+            tb.innerHTML = '';
+            itensProposta.forEach(it => {
+                tb.innerHTML += `<tr>
+                    <td>${it.volume}</td>
+                    <td>${it.fck}</td>
+                    <td>${it.brita}</td>
+                    <td>120±20</td>
+                    <td>R$ ${Number(it.preco).toFixed(2)}</td>
+                </tr>`;
+            });
+
+            document.getElementById('pr_bomba').innerText = document.getElementById('cfg_bomba').value;
+            document.getElementById('pr_min_b').innerText = document.getElementById('cfg_min_b').value;
+            document.getElementById('pr_fibra').innerText = document.getElementById('cfg_fibra').value;
+            document.getElementById('pr_faltante').innerText = document.getElementById('cfg_faltante').value;
+            document.getElementById('pr_perm').innerText = document.getElementById('cfg_perm').value;
+            document.getElementById('pr_h_uteis').innerText = document.getElementById('cfg_h_uteis').value;
+            document.getElementById('pr_h_sab').innerText = document.getElementById('cfg_h_sab').value;
+            document.getElementById('pr_h_dom').innerText = document.getElementById('cfg_h_dom').value;
+            document.getElementById('pr_min_dom').innerText = document.getElementById('cfg_min_dom').value;
+            document.getElementById('pr_rac').innerText = document.getElementById('cfg_rac').value;
+            document.getElementById('pr_roc').innerText = document.getElementById('cfg_roc').value;
+            document.getElementById('pr_prazo').innerText = document.getElementById('cfg_prazo').value;
+
+            document.getElementById('p_obs').innerText = document.getElementById('obs').value || "A COMBINAR";
+            document.getElementById('p_vend').innerText = (vend.nome || '').toUpperCase();
+            document.getElementById('p_v_cel').innerText = vend.cel || '';
+
+            setTimeout(() => window.print(), 100);
+        } catch (e) {
+            alert("Erro ao gerar impressão: " + e.message);
+        }
     }
 
-    function salvarV() { localStorage.setItem('solomix_v', JSON.stringify({ nome: document.getElementById('v_nome').value, cel: document.getElementById('v_cel').value })); alert("Perfil Salvo!"); }
+    function salvarV() { 
+        localStorage.setItem('solomix_v', JSON.stringify({ nome: document.getElementById('v_nome').value, cel: document.getElementById('v_cel').value })); 
+        alert("Perfil Salvo!"); 
+    }
 
-    window.onload = () => { atualizarC(); listarP(); const v = JSON.parse(localStorage.getItem('solomix_v')||'{}'); document.getElementById('v_nome').value=v.nome||''; document.getElementById('v_cel').value=v.cel||''; };
+    function salvarProgramacao() {
+        let db = JSON.parse(localStorage.getItem('solomix_prog') || '[]');
+        const idx = document.getElementById('idx_prog').value;
+        const obj = {
+            data: new Date().toLocaleDateString('pt-BR'),
+            cliIdx: document.getElementById('selProgC').value,
+            obra_nome: document.getElementById('prog_obra_nome').value,
+            contrato: document.getElementById('prog_contrato').value,
+            solicitante: document.getElementById('prog_solicitante').value,
+            cno: document.getElementById('prog_cno').value,
+            email: document.getElementById('prog_email').value,
+            contato_obra: document.getElementById('prog_contato_obra').value,
+            volume: document.getElementById('prog_volume').value,
+            fck: document.getElementById('prog_fck').value,
+            slp: document.getElementById('prog_slp').value,
+            brita: document.getElementById('prog_brita').value,
+            preco: document.getElementById('prog_preco').value,
+            bomba: document.getElementById('prog_bomba').value,
+            pagamento: document.getElementById('prog_pagamento').value,
+            end_obra: document.getElementById('prog_end_obra').value,
+            obs: document.getElementById('prog_obs').value
+        };
+        if(idx == "-1") db.push(obj); else db[idx] = obj;
+        localStorage.setItem('solomix_prog', JSON.stringify(db));
+        listarProgramacoes();
+        alert("Programação salva!");
+    }
 
-    // FUNÇÕES ADICIONADAS PARA EXPORTAR EXCEL
+    function listarProgramacoes() {
+        const db = JSON.parse(localStorage.getItem('solomix_prog') || '[]');
+        const dbC = JSON.parse(localStorage.getItem('solomix_c') || '[]');
+        const l = document.getElementById('listaProg');
+        l.innerHTML = '';
+        db.slice().reverse().forEach((p, i) => {
+            const rIdx = db.length - 1 - i;
+            const nomeCli = dbC[p.cliIdx] ? dbC[p.cliIdx].nome : "Excluído";
+            l.innerHTML += `<tr>
+                <td>${p.data}</td>
+                <td>${nomeCli}</td>
+                <td>${p.obra_nome || ''}</td>
+                <td class="actions">
+                    <span onclick="editarProgramacao(${rIdx})">✏️</span>
+                    <span onclick="excluirProgramacao(${rIdx})">🗑️</span>
+                </td>
+            </tr>`;
+        });
+    }
+
+    function editarProgramacao(i) {
+        const p = JSON.parse(localStorage.getItem('solomix_prog'))[i];
+        document.getElementById('selProgC').value = p.cliIdx;
+        document.getElementById('prog_obra_nome').value = p.obra_nome || '';
+        document.getElementById('prog_contrato').value = p.contrato || '';
+        document.getElementById('prog_solicitante').value = p.solicitante || '';
+        document.getElementById('prog_cno').value = p.cno || '';
+        document.getElementById('prog_email').value = p.email || '';
+        document.getElementById('prog_contato_obra').value = p.contato_obra || '';
+        document.getElementById('prog_volume').value = p.volume || '';
+        document.getElementById('prog_fck').value = p.fck || '';
+        document.getElementById('prog_slp').value = p.slp || '';
+        document.getElementById('prog_brita').value = p.brita || '';
+        document.getElementById('prog_preco').value = p.preco || '';
+        document.getElementById('prog_bomba').value = p.bomba || '';
+        document.getElementById('prog_pagamento').value = p.pagamento || '';
+        document.getElementById('prog_end_obra').value = p.end_obra || '';
+        document.getElementById('prog_obs').value = p.obs || '';
+        document.getElementById('idx_prog').value = i;
+    }
+
+    function excluirProgramacao(i) {
+        if(confirm("Excluir programação?")) {
+            let db = JSON.parse(localStorage.getItem('solomix_prog') || '[]');
+            db.splice(i,1);
+            localStorage.setItem('solomix_prog', JSON.stringify(db));
+            listarProgramacoes();
+        }
+    }
+
+    function carregarClienteProgramacao(i) {
+        if (i === "" || i === null || i === undefined) return;
+        const dbC = JSON.parse(localStorage.getItem('solomix_c') || '[]');
+        const c = dbC[i];
+        if (!c) return;
+        document.getElementById('prog_contato_obra').value = c.tel || document.getElementById('prog_contato_obra').value || '';
+    }
+
+    function gerarTxtProgramacao() {
+        const cliIdx = document.getElementById('selProgC').value;
+        const dbC = JSON.parse(localStorage.getItem('solomix_c') || '[]');
+        const cli = dbC[cliIdx] || {};
+
+        const txt = [
+`Nome da obra: ${document.getElementById('prog_obra_nome').value || ''}`,
+`Contrato: ${document.getElementById('prog_contrato').value || ''}`,
+`--------------------------------------`,
+`Cliente: ${cli.nome || ''}`,
+`CNPJ:${cli.doc || ''}`,
+`Endereço Cliente: ${(cli.end || '')}${cli.num ? ', ' + cli.num : ''}`,
+`${cli.comp || ''}`,
+`CNO: ${document.getElementById('prog_cno').value || ''}`,
+`Email: ${document.getElementById('prog_email').value || ''}`,
+`Contato da obra : ${document.getElementById('prog_contato_obra').value || ''}`,
+`Solicitante: ${document.getElementById('prog_solicitante').value || ''}`,
+`---------------------------------------`,
+`End. Obra : `,
+`${document.getElementById('prog_end_obra').value || ''}`,
+`--------------------------------------`,
+`Fck ${document.getElementById('prog_fck').value || ''} SLP ${document.getElementById('prog_slp').value || ''} ${document.getElementById('prog_brita').value || ''}   $. ${document.getElementById('prog_preco').value || ''} bomba ---------------------R$.     ${document.getElementById('prog_bomba').value || ''} `,
+`Volume : ${document.getElementById('prog_volume').value || ''} Mandar 10 e aguardar`,
+``,
+`Forma pagamento: ${document.getElementById('prog_pagamento').value || ''}`,
+`(${document.getElementById('prog_obs').value || ''})`
+        ].join('\n');
+
+        const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'programacao.txt';
+        link.click();
+    }
+
+    window.onload = () => { 
+        atualizarC(); 
+        listarP(); 
+        listarProgramacoes();
+        const v = JSON.parse(localStorage.getItem('solomix_v')||'{}'); 
+        document.getElementById('v_nome').value=v.nome||''; 
+        document.getElementById('v_cel').value=v.cel||''; 
+    };
+
     function exportarClientesExcel() {
         const db = JSON.parse(localStorage.getItem('solomix_c') || '[]');
         if (db.length === 0) return alert("Não há clientes cadastrados.");
