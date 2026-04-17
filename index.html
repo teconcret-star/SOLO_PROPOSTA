@@ -1,434 +1,388 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Solomix - Sistema Comercial</title>
-    <style>
-        :root {
-            --primary: #2d6a4f;
-            --solomix-green: #8cc63f;
-            --bg: #f4f7f6;
-            --status-andamento: #f1c40f;
-            --status-fechada: #27ae60;
-            --status-perdida: #e74c3c;
-            --edit: #1565c0;
-        }
-        * { box-sizing: border-box; font-family: Arial, sans-serif; }
-        body { background-color: var(--bg); margin: 0; padding-bottom: 90px; }
-        .no-print { display: block; }
-        .header-app { background: white; padding: 10px; text-align: center; border-bottom: 3px solid var(--solomix-green); }
-        .logo-app { width: 80px; height: 80px; object-fit: contain; }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Solomix - Sistema Comercial</title>
+  <style>
+    :root {
+      --primary: #2d6a4f;
+      --solomix-green: #8cc63f;
+      --bg: #f4f7f6;
+      --status-andamento: #f1c40f;
+      --status-fechada: #27ae60;
+      --status-perdida: #e74c3c;
+      --edit: #1565c0;
+    }
+    * { box-sizing: border-box; font-family: Arial, sans-serif; }
+    body { background-color: var(--bg); margin: 0; padding-bottom: 90px; }
+    .no-print { display: block; }
+    .header-app { background: white; padding: 10px; text-align: center; border-bottom: 3px solid var(--solomix-green); }
+    .logo-app { width: 80px; height: 80px; object-fit: contain; }
 
-        .card { background: white; margin: 10px; padding: 15px; border-radius: 8px; border: 1px solid #ddd; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        h3 { margin-top: 0; color: var(--primary); border-left: 5px solid var(--primary); padding-left: 10px; font-size: 1.1rem; }
+    .card { background: white; margin: 10px; padding: 15px; border-radius: 8px; border: 1px solid #ddd; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+    h3 { margin-top: 0; color: var(--primary); border-left: 5px solid var(--primary); padding-left: 10px; font-size: 1.1rem; }
 
-        .field { margin-bottom: 10px; }
-        label { display: block; font-size: 0.8rem; font-weight: bold; margin-bottom: 4px; color: var(--primary); }
-        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
+    .field { margin-bottom: 10px; }
+    label { display: block; font-size: 0.8rem; font-weight: bold; margin-bottom: 4px; color: var(--primary); }
+    input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
 
-        .row { display: flex; gap: 10px; }
-        .col { flex: 1; }
+    .row { display: flex; gap: 10px; }
+    .col { flex: 1; }
 
-        .btn { background: var(--primary); color: white; border: none; padding: 12px; width: 100%; border-radius: 4px; font-weight: bold; cursor: pointer; text-transform: uppercase; margin-top: 5px; }
+    .btn { background: var(--primary); color: white; border: none; padding: 12px; width: 100%; border-radius: 4px; font-weight: bold; cursor: pointer; text-transform: uppercase; margin-top: 5px; }
 
-        .table-container { overflow-x: auto; margin-top: 15px; background: white; border-radius: 4px; border: 1px solid #ddd; }
-        table.app-table { width: 100%; border-collapse: collapse; min-width: 600px; }
-        table.app-table th {
-            background: #e9ecef;
-            padding: 10px;
-            text-align: left;
-            font-size: 0.75rem;
-            border-bottom: 2px solid #ddd;
-            font-weight: bold;
-            color: #333;
-        }
-        table.app-table td { padding: 10px; border-bottom: 1px solid #eee; font-size: 0.85rem; }
+    .table-container { overflow-x: auto; margin-top: 15px; background: white; border-radius: 4px; border: 1px solid #ddd; }
+    table.app-table { width: 100%; border-collapse: collapse; min-width: 600px; }
+    table.app-table th {
+      background: #e9ecef;
+      padding: 10px;
+      text-align: left;
+      font-size: 0.75rem;
+      border-bottom: 2px solid #ddd;
+      font-weight: bold;
+      color: #333;
+    }
+    table.app-table td { padding: 10px; border-bottom: 1px solid #eee; font-size: 0.85rem; }
 
-        .badge { padding: 4px 8px; border-radius: 4px; color: white; font-size: 0.7rem; font-weight: bold; }
-        .bg-andamento { background: var(--status-andamento); }
-        .bg-fechada { background: var(--status-fechada); }
-        .bg-perdida { background: var(--status-perdida); }
-        .actions { display: flex; gap: 10px; cursor: pointer; font-size: 1.2rem; }
+    .badge { padding: 4px 8px; border-radius: 4px; color: white; font-size: 0.7rem; font-weight: bold; }
+    .bg-andamento { background: var(--status-andamento); }
+    .bg-fechada { background: var(--status-fechada); }
+    .bg-perdida { background: var(--status-perdida); }
+    .actions { display: flex; gap: 10px; cursor: pointer; font-size: 1.2rem; }
 
-        .nav-bar { position: fixed; bottom: 0; width: 100%; background: white; display: flex; border-top: 2px solid #eee; height: 70px; z-index: 100; }
-        .nav-item { flex: 1; text-align: center; padding: 10px; color: #999; background: none; border: none; font-size: 0.7rem; font-weight: bold; cursor: pointer; }
-        .nav-item.active { color: var(--primary); border-top: 3px solid var(--primary); }
+    .nav-bar { position: fixed; bottom: 0; width: 100%; background: white; display: flex; border-top: 2px solid #eee; height: 70px; z-index: 100; }
+    .nav-item { flex: 1; text-align: center; padding: 10px; color: #999; background: none; border: none; font-size: 0.7rem; font-weight: bold; cursor: pointer; }
+    .nav-item.active { color: var(--primary); border-top: 3px solid var(--primary); }
 
-        .section { display: none; }
-        .section.active { display: block; }
+    .section { display: none; }
+    .section.active { display: block; }
 
-        #doc-impressao { display: none; }
-        #doc-programacao { display: none; }
+    #doc-impressao { display: none; }
+    #doc-programacao { display: none; }
 
-        .prog-box {
-            background: white;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            padding: 15px;
-            margin-top: 10px;
-        }
-        .prog-title {
-            font-size: 1rem;
-            font-weight: bold;
-            text-align: center;
-            margin-bottom: 10px;
-            color: var(--primary);
-            text-transform: uppercase;
-        }
-        .prog-line {
-            margin: 4px 0;
-            font-size: 0.95rem;
-        }
+    .prog-box {
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 15px;
+      margin-top: 10px;
+    }
+    .prog-title {
+      font-size: 1rem;
+      font-weight: bold;
+      text-align: center;
+      margin-bottom: 10px;
+      color: var(--primary);
+      text-transform: uppercase;
+    }
+    .prog-line {
+      margin: 4px 0;
+      font-size: 0.95rem;
+    }
 
-        @media print {
-            @page { margin: 0.5cm; size: A4; }
-            body { background: white !important; }
-            .no-print, .nav-bar { display: none !important; }
-            #doc-impressao, #doc-programacao { display: block !important; padding: 10px; color: black; font-size: 11px; line-height: 1.3; }
-            .print-logo { width: 100px; height: 100px; margin-bottom: 10px; object-fit: contain; }
-            .print-table { width: 100%; border-collapse: collapse; margin: 10px 0; }
-            .print-table th {
-                background: #e9ecef !important;
-                color: #333 !important;
-                border: 1px solid black;
-                padding: 6px;
-                font-weight: bold;
-            }
-            .print-table td { border: 1px solid black; padding: 6px; text-align: center; }
-            .section-title { font-weight: bold; text-decoration: underline; margin-top: 10px; text-transform: uppercase; background: #eee !important; padding: 2px; }
-            .list-item { margin: 2px 0; }
-            .signature-area { margin-top: 30px; display: flex; justify-content: space-between; }
-            .sig-box { width: 45%; border-top: 1px solid black; text-align: center; padding-top: 5px; }
+    @media print {
+      @page { margin: 0.5cm; size: A4; }
+      body { background: white !important; }
+      .no-print, .nav-bar { display: none !important; }
+      #doc-impressao, #doc-programacao { display: block !important; padding: 10px; color: black; font-size: 11px; line-height: 1.3; }
+      .print-logo { width: 100px; height: 100px; margin-bottom: 10px; object-fit: contain; }
+      .print-table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+      .print-table th {
+        background: #e9ecef !important;
+        color: #333 !important;
+        border: 1px solid black;
+        padding: 6px;
+        font-weight: bold;
+      }
+      .print-table td { border: 1px solid black; padding: 6px; text-align: center; }
+      .section-title { font-weight: bold; text-decoration: underline; margin-top: 10px; text-transform: uppercase; background: #eee !important; padding: 2px; }
+      .list-item { margin: 2px 0; }
+      .signature-area { margin-top: 30px; display: flex; justify-content: space-between; }
+      .sig-box { width: 45%; border-top: 1px solid black; text-align: center; padding-top: 5px; }
 
-            #doc-programacao .prog-box {
-                border: 1px solid #000;
-                padding: 10px;
-                margin-bottom: 10px;
-            }
-            #doc-programacao .prog-title {
-                font-size: 14px;
-                font-weight: bold;
-                text-align: center;
-                margin-bottom: 10px;
-                text-transform: uppercase;
-            }
-            #doc-programacao .prog-line {
-                margin: 4px 0;
-            }
-        }
-    </style>
+      #doc-programacao .prog-box {
+        border: 1px solid #000;
+        padding: 10px;
+        margin-bottom: 10px;
+      }
+      #doc-programacao .prog-title {
+        font-size: 14px;
+        font-weight: bold;
+        text-align: center;
+        margin-bottom: 10px;
+        text-transform: uppercase;
+      }
+      #doc-programacao .prog-line {
+        margin: 4px 0;
+      }
+    }
+  </style>
 </head>
 <body>
 
 <div class="header-app no-print">
-    <img src="logotipo.webp" class="logo-app">
+  <img src="logotipo.webp" class="logo-app" />
 </div>
 
 <div id="agenda" class="section active no-print">
-    <div class="card">
-        <h3>Agenda de Prospecção</h3>
-        <input type="hidden" id="idx_c" value="-1">
-        <input type="text" id="nome" class="field" placeholder="Nome do Cliente / Construtora">
-        <input type="text" id="doc_c" class="field" placeholder="CPF / CNPJ">
-        <div class="row">
-            <div class="col"><input type="number" id="cep" class="field" placeholder="CEP" oninput="autoCEP(this.value)"></div>
-            <div class="col"><input type="text" id="num" class="field" placeholder="Nº"></div>
-        </div>
-        <input type="text" id="end" class="field" placeholder="Endereço">
-        <input type="text" id="comp" class="field" placeholder="Complemento (Bloco, Obra...)">
-        <input type="tel" id="tel_c" class="field" placeholder="Contato" maxlength="15" onkeyup="mascaraTel(this)">
-        <button class="btn" id="btn_cli" onclick="salvarC()">SALVAR CLIENTE</button>
-        <button class="btn" style="background:#28a745; margin-top:10px;" onclick="exportarClientesExcel()">📥 EXPORTAR CLIENTES (EXCEL)</button>
-
-        <div class="table-container">
-            <table class="app-table">
-                <thead><tr><th>Data</th><th>Cliente</th><th>Ações</th></tr></thead>
-                <tbody id="listaC"></tbody>
-            </table>
-        </div>
+  <div class="card">
+    <h3>Agenda de Prospecção</h3>
+    <input type="hidden" id="idx_c" value="-1">
+    <input type="text" id="nome" class="field" placeholder="Nome do Cliente / Construtora">
+    <input type="text" id="doc_c" class="field" placeholder="CPF / CNPJ">
+    <div class="row">
+      <div class="col"><input type="number" id="cep" class="field" placeholder="CEP"></div>
+      <div class="col"><input type="text" id="num" class="field" placeholder="Nº"></div>
     </div>
+    <input type="text" id="end" class="field" placeholder="Endereço">
+    <input type="text" id="comp" class="field" placeholder="Complemento (Bloco, Obra...)">
+    <input type="tel" id="tel_c" class="field" placeholder="Contato" maxlength="15">
+    <button class="btn" id="btn_cli" onclick="salvarC()">SALVAR CLIENTE</button>
+    <button class="btn" style="background:#28a745; margin-top:10px;" onclick="exportarClientesExcel()">📥 EXPORTAR CLIENTES (EXCEL)</button>
+
+    <div class="table-container">
+      <table class="app-table">
+        <thead><tr><th>Data</th><th>Cliente</th><th>Ações</th></tr></thead>
+        <tbody id="listaC"></tbody>
+      </table>
+    </div>
+  </div>
 </div>
 
 <div id="proposta" class="section no-print">
-    <div class="card">
-        <h3>Proposta Comercial</h3>
-        <input type="hidden" id="idx_p" value="-1">
-        <div class="row">
-            <div class="col">
-                <label>Unidade</label>
-                <select id="filial" class="field">
-                    <option>Divinopolis</option><option>Uberlandia</option><option>Manhuaçu</option>
-                    <option>Betim</option><option>Itauna</option><option>Itatiaiuçu</option>
-                    <option>Nova Serana</option><option>Bom Despacho</option><option>Igarapé</option><option>Abaeté</option>
-                </select>
-            </div>
-            <div class="col"><label>Cliente</label><select id="selC" class="field"></select></div>
-        </div>
-
-        <div style="background: #f1f1f1; padding: 10px; border-radius: 4px; border: 1px solid #ddd; margin-bottom: 10px;">
-            <label>Itens da Proposta (FCK)</label>
-
-            <div class="row">
-                <div class="col">
-                    <label>Volume de Concreto (m³)</label>
-                    <input type="number" id="volume" class="field" placeholder="Ex: 10" min="0" step="0.01">
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col"><select id="fck" class="field"></select></div>
-                <div class="col"><select id="brita" class="field"><option>0+1</option><option>0</option><option>1</option></select></div>
-            </div>
-            <div class="row">
-                <div class="col"><input type="number" id="vBase" placeholder="Preço R$"></div>
-                <div class="col"><input type="number" id="margem" placeholder="Margem %" value="0"></div>
-            </div>
-            <button class="btn" style="background:#555; font-size:0.8rem;" onclick="addLinha()">+ ADICIONAR ITEM</button>
-            <table style="width:100%; margin-top:10px; font-size:0.8rem; background:white;">
-                <thead>
-                    <tr style="background:#e9ecef; font-weight:bold;">
-                        <th style="font-weight:bold;">Volume</th>
-                        <th style="font-weight:bold;">FCK</th>
-                        <th style="font-weight:bold;">Brita</th>
-                        <th style="font-weight:bold;">Valor</th>
-                        <th style="font-weight:bold;">Ação</th>
-                    </tr>
-                </thead>
-                <tbody id="itensTmp"></tbody>
-            </table>
-        </div>
-
-        <div style="background: #fff9db; padding: 10px; border-radius: 4px; border: 1px solid #fab005; margin-bottom: 10px;">
-            <label style="color: #856404; font-weight: bold;">Adicionais e Condições</label>
-            <div class="row">
-                <div class="col"><label>Bomba (R$/m³)</label><input type="text" id="cfg_bomba" value="60,00"></div>
-                <div class="col"><label>Mín. Bomba (m³)</label><input type="text" id="cfg_min_b" value="20,0"></div>
-            </div>
-            <div class="row">
-                <div class="col"><label>Fibra (R$/m³)</label><input type="text" id="cfg_fibra" value="30,00"></div>
-                <div class="col"><label>m³ Faltante (R$)</label><input type="text" id="cfg_faltante" value="180,00"></div>
-            </div>
-            <div class="row">
-                <div class="col"><label>2ª a 6ª > 18h (%)</label><input type="text" id="cfg_h_uteis" value="30%"></div>
-                <div class="col"><label>Sábados > 12h (%)</label><input type="text" id="cfg_h_sab" value="30%"></div>
-            </div>
-            <div class="row">
-                <div class="col"><label>Dom./Fer. (%)</label><input type="text" id="cfg_h_dom" value="50%"></div>
-                <div class="col"><label>Mín. Dom. (m³)</label><input type="text" id="cfg_min_dom" value="80m³"></div>
-            </div>
-            <div class="row">
-                <div class="col"><label>RAC (%)</label><input type="text" id="cfg_rac" value="50%"></div>
-                <div class="col"><label>ROC (%)</label><input type="text" id="cfg_roc" value="50%"></div>
-            </div>
-            <div class="row">
-                <div class="col"><label>Prazo Pagto</label><input type="text" id="cfg_prazo" value="A COMBINAR"></div>
-                <div class="col"><label>Permanência (R$)</label><input type="text" id="cfg_perm" value="200,00"></div>
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="col"><label>Responsável Obra</label><input type="text" id="contato_obra" placeholder="A/C: Nome"></div>
-            <div class="col"><label>Status</label>
-                <select id="status" class="field">
-                    <option value="andamento">🟡 Em Andamento</option>
-                    <option value="fechada">🟢 Fechada</option>
-                    <option value="perdida">🔴 Perdida</option>
-                </select>
-            </div>
-        </div>
-        <textarea id="obs" class="field" rows="2" placeholder="Observações extras..."></textarea>
-        <button class="btn" id="btn_prop" onclick="salvarP()">SALVAR PROPOSTA</button>
-        <button class="btn" style="background:#444; margin-top:10px;" onclick="imprimir()">GERAR PDF / IMPRIMIR</button>
-        <button class="btn" style="background:#28a745; margin-top:10px;" onclick="exportarPropostasExcel()">📥 EXPORTAR PROPOSTAS (EXCEL)</button>
-
-        <div class="table-container">
-            <table class="app-table">
-                <thead><tr><th>Data</th><th>Cliente</th><th>Status</th><th>Ações</th></tr></thead>
-                <tbody id="listaP"></tbody>
-            </table>
-        </div>
+  <div class="card">
+    <h3>Proposta Comercial</h3>
+    <input type="hidden" id="idx_p" value="-1">
+    <div class="row">
+      <div class="col">
+        <label>Unidade</label>
+        <select id="filial" class="field">
+          <option>Divinopolis</option><option>Uberlandia</option><option>Manhuaçu</option>
+          <option>Betim</option><option>Itauna</option><option>Itatiaiuçu</option>
+          <option>Nova Serana</option><option>Bom Despacho</option><option>Igarapé</option><option>Abaeté</option>
+        </select>
+      </div>
+      <div class="col"><label>Cliente</label><select id="selC" class="field"></select></div>
     </div>
+
+    <div style="background:#f1f1f1; padding:10px; border-radius:4px; border:1px solid #ddd; margin-bottom:10px;">
+      <label>Itens da Proposta (FCK)</label>
+      <div class="row">
+        <div class="col">
+          <label>Volume de Concreto (m³)</label>
+          <input type="number" id="volume" class="field" placeholder="Ex: 10" min="0" step="0.01">
+        </div>
+      </div>
+      <div class="row">
+        <div class="col"><select id="fck" class="field"></select></div>
+        <div class="col"><select id="brita" class="field"><option>0+1</option><option>0</option><option>1</option></select></div>
+      </div>
+      <div class="row">
+        <div class="col"><input type="number" id="vBase" placeholder="Preço R$"></div>
+        <div class="col"><input type="number" id="margem" placeholder="Margem %" value="0"></div>
+      </div>
+      <button class="btn" style="background:#555; font-size:0.8rem;" onclick="addLinha()">+ ADICIONAR ITEM</button>
+      <table style="width:100%; margin-top:10px; font-size:0.8rem; background:white;">
+        <thead>
+          <tr style="background:#e9ecef; font-weight:bold;">
+            <th>Volume</th><th>FCK</th><th>Brita</th><th>Valor</th><th>Ação</th>
+          </tr>
+        </thead>
+        <tbody id="itensTmp"></tbody>
+      </table>
+    </div>
+
+    <div style="background:#fff9db; padding:10px; border-radius:4px; border:1px solid #fab005; margin-bottom:10px;">
+      <label style="color:#856404; font-weight:bold;">Adicionais e Condições</label>
+      <div class="row">
+        <div class="col"><label>Bomba (R$/m³)</label><input type="text" id="cfg_bomba" value="60,00"></div>
+        <div class="col"><label>Mín. Bomba (m³)</label><input type="text" id="cfg_min_b" value="20,0"></div>
+      </div>
+      <div class="row">
+        <div class="col"><label>Fibra (R$/m³)</label><input type="text" id="cfg_fibra" value="30,00"></div>
+        <div class="col"><label>m³ Faltante (R$)</label><input type="text" id="cfg_faltante" value="180,00"></div>
+      </div>
+      <div class="row">
+        <div class="col"><label>2ª a 6ª > 18h (%)</label><input type="text" id="cfg_h_uteis" value="30%"></div>
+        <div class="col"><label>Sábados > 12h (%)</label><input type="text" id="cfg_h_sab" value="30%"></div>
+      </div>
+      <div class="row">
+        <div class="col"><label>Dom./Fer. (%)</label><input type="text" id="cfg_h_dom" value="50%"></div>
+        <div class="col"><label>Mín. Dom. (m³)</label><input type="text" id="cfg_min_dom" value="80m³"></div>
+      </div>
+      <div class="row">
+        <div class="col"><label>RAC (%)</label><input type="text" id="cfg_rac" value="50%"></div>
+        <div class="col"><label>ROC (%)</label><input type="text" id="cfg_roc" value="50%"></div>
+      </div>
+      <div class="row">
+        <div class="col"><label>Prazo Pagto</label><input type="text" id="cfg_prazo" value="A COMBINAR"></div>
+        <div class="col"><label>Permanência (R$)</label><input type="text" id="cfg_perm" value="200,00"></div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col"><label>Responsável Obra</label><input type="text" id="contato_obra" placeholder="A/C: Nome"></div>
+      <div class="col"><label>Status</label>
+        <select id="status" class="field">
+          <option value="andamento">🟡 Em Andamento</option>
+          <option value="fechada">🟢 Fechada</option>
+          <option value="perdida">🔴 Perdida</option>
+        </select>
+      </div>
+    </div>
+    <textarea id="obs" class="field" rows="2" placeholder="Observações extras..."></textarea>
+    <button class="btn" id="btn_prop" onclick="salvarP()">SALVAR PROPOSTA</button>
+    <button class="btn" style="background:#444; margin-top:10px;" onclick="imprimir()">GERAR PDF / IMPRIMIR</button>
+    <button class="btn" style="background:#28a745; margin-top:10px;" onclick="exportarPropostasExcel()">📥 EXPORTAR PROPOSTAS (EXCEL)</button>
+
+    <div class="table-container">
+      <table class="app-table">
+        <thead><tr><th>Data</th><th>Cliente</th><th>Status</th><th>Ações</th></tr></thead>
+        <tbody id="listaP"></tbody>
+      </table>
+    </div>
+  </div>
 </div>
 
 <div id="programacao" class="section no-print">
-    <div class="card">
-        <h3>Programação</h3>
-        <input type="hidden" id="idx_prog" value="-1">
+  <div class="card">
+    <h3>Programação</h3>
+    <input type="hidden" id="idx_prog" value="-1">
 
-        <div class="row">
-            <div class="col">
-                <label>Cliente</label>
-                <select id="selProgC" class="field" onchange="carregarClienteProgramacao(this.value)"></select>
-            </div>
-            <div class="col">
-                <label>Nome da Obra</label>
-                <input type="text" id="prog_obra_nome" class="field" placeholder="Nome da obra">
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="col">
-                <label>Contrato</label>
-                <input type="text" id="prog_contrato" class="field" placeholder="Contrato">
-            </div>
-            <div class="col">
-                <label>Solicitante</label>
-                <input type="text" id="prog_solicitante" class="field" placeholder="Solicitante">
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="col">
-                <label>CNO</label>
-                <input type="text" id="prog_cno" class="field" placeholder="CNO">
-            </div>
-            <div class="col">
-                <label>Email</label>
-                <input type="email" id="prog_email" class="field" placeholder="Email">
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="col">
-                <label>Contato da Obra</label>
-                <input type="tel" id="prog_contato_obra" class="field" placeholder="Contato da obra">
-            </div>
-            <div class="col">
-                <label>Volume</label>
-                <input type="text" id="prog_volume" class="field" placeholder="Ex: 16 m³">
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="col">
-                <label>FCK</label>
-                <input type="text" id="prog_fck" class="field" placeholder="Ex: 15 MPa">
-            </div>
-            <div class="col">
-                <label>SLP</label>
-                <input type="text" id="prog_slp" class="field" placeholder="Ex: 12+-2">
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="col">
-                <label>Brita</label>
-                <input type="text" id="prog_brita" class="field" placeholder="Ex: B mista">
-            </div>
-            <div class="col">
-                <label>Preço Concreto (R$)</label>
-                <input type="text" id="prog_preco" class="field" placeholder="Ex: 490,00">
-            </div>
-        </div>
-
-        <div class="row">
-            <div class="col">
-                <label>Bomba (R$)</label>
-                <input type="text" id="prog_bomba" class="field" placeholder="Ex: 80,00">
-            </div>
-            <div class="col">
-                <label>Forma de Pagamento</label>
-                <input type="text" id="prog_pagamento" class="field" placeholder="Ex: Boleto 28 dias">
-            </div>
-        </div>
-
-        <label>Endereço da Obra</label>
-        <textarea id="prog_end_obra" class="field" rows="2" placeholder="Endereço da obra"></textarea>
-
-        <label>Observações</label>
-        <textarea id="prog_obs" class="field" rows="3" placeholder="Observações da programação"></textarea>
-
-        <button class="btn" onclick="salvarProgramacao()">SALVAR PROGRAMAÇÃO</button>
-        <button class="btn" style="background:#444; margin-top:10px;" onclick="gerarTxtProgramacao()">GERAR TXT</button>
-
-        <div class="prog-box">
-            <div class="prog-title">Extrato da Programação</div>
-            <div class="prog-line"><strong>Nome da Obra:</strong> <span id="pp_obra_nome"></span></div>
-            <div class="prog-line"><strong>Contrato:</strong> <span id="pp_contrato"></span></div>
-            <div class="prog-line"><strong>Cliente:</strong> <span id="pp_cliente"></span></div>
-            <div class="prog-line"><strong>CNPJ:</strong> <span id="pp_cnpj"></span></div>
-            <div class="prog-line"><strong>Endereço Cliente:</strong> <span id="pp_end_cliente"></span></div>
-            <div class="prog-line"><strong>CNO:</strong> <span id="pp_cno"></span></div>
-            <div class="prog-line"><strong>Email:</strong> <span id="pp_email"></span></div>
-            <div class="prog-line"><strong>Contato da Obra:</strong> <span id="pp_contato_obra"></span></div>
-            <div class="prog-line"><strong>Solicitante:</strong> <span id="pp_solicitante"></span></div>
-            <div class="prog-line"><strong>End. Obra:</strong> <span id="pp_end_obra"></span></div>
-            <div class="prog-line"><strong>FCK:</strong> <span id="pp_fck"></span></div>
-            <div class="prog-line"><strong>SLP:</strong> <span id="pp_slp"></span></div>
-            <div class="prog-line"><strong>Brita:</strong> <span id="pp_brita"></span></div>
-            <div class="prog-line"><strong>Preço:</strong> R$ <span id="pp_preco"></span></div>
-            <div class="prog-line"><strong>Bomba:</strong> R$ <span id="pp_bomba"></span></div>
-            <div class="prog-line"><strong>Volume:</strong> <span id="pp_volume"></span></div>
-            <div class="prog-line"><strong>Forma de Pagamento:</strong> <span id="pp_pagamento"></span></div>
-            <div class="prog-line"><strong>Observação:</strong> <span id="pp_obs"></span></div>
-        </div>
-
-        <div class="table-container">
-            <table class="app-table">
-                <thead><tr><th>Data</th><th>Cliente</th><th>Obra</th><th>Ações</th></tr></thead>
-                <tbody id="listaProg"></tbody>
-            </table>
-        </div>
+    <div class="row">
+      <div class="col">
+        <label>Cliente</label>
+        <select id="selProgC" class="field" onchange="carregarClienteProgramacao(this.value)"></select>
+      </div>
+      <div class="col">
+        <label>Nome da Obra</label>
+        <input type="text" id="prog_obra_nome" class="field" placeholder="Nome da obra">
+      </div>
     </div>
+
+    <div class="row">
+      <div class="col"><label>Contrato</label><input type="text" id="prog_contrato" class="field" placeholder="Contrato"></div>
+      <div class="col"><label>Solicitante</label><input type="text" id="prog_solicitante" class="field" placeholder="Solicitante"></div>
+    </div>
+
+    <div class="row">
+      <div class="col"><label>CNO</label><input type="text" id="prog_cno" class="field" placeholder="CNO"></div>
+      <div class="col"><label>Email</label><input type="email" id="prog_email" class="field" placeholder="Email"></div>
+    </div>
+
+    <div class="row">
+      <div class="col"><label>Contato da Obra</label><input type="tel" id="prog_contato_obra" class="field" placeholder="Contato da obra"></div>
+      <div class="col"><label>Volume</label><input type="text" id="prog_volume" class="field" placeholder="Ex: 16 m³"></div>
+    </div>
+
+    <div class="row">
+      <div class="col"><label>FCK</label><input type="text" id="prog_fck" class="field" placeholder="Ex: 15 MPa"></div>
+      <div class="col"><label>SLP</label><input type="text" id="prog_slp" class="field" placeholder="Ex: 12+-2"></div>
+    </div>
+
+    <div class="row">
+      <div class="col"><label>Brita</label><input type="text" id="prog_brita" class="field" placeholder="Ex: B mista"></div>
+      <div class="col"><label>Preço Concreto (R$)</label><input type="text" id="prog_preco" class="field" placeholder="Ex: 490,00"></div>
+    </div>
+
+    <div class="row">
+      <div class="col"><label>Bomba (R$)</label><input type="text" id="prog_bomba" class="field" placeholder="Ex: 80,00"></div>
+      <div class="col"><label>Forma de Pagamento</label><input type="text" id="prog_pagamento" class="field" placeholder="Ex: Boleto 28 dias"></div>
+    </div>
+
+    <label>Endereço da Obra</label>
+    <textarea id="prog_end_obra" class="field" rows="2" placeholder="Endereço da obra"></textarea>
+
+    <label>Observações</label>
+    <textarea id="prog_obs" class="field" rows="3" placeholder="Observações da programação"></textarea>
+
+    <button class="btn" onclick="salvarProgramacao()">SALVAR PROGRAMAÇÃO</button>
+    <button class="btn" style="background:#444; margin-top:10px;" onclick="gerarTxtProgramacao()">GERAR TXT</button>
+
+    <div class="prog-box">
+      <div class="prog-title">Extrato da Programação</div>
+      <div class="prog-line"><strong>Nome da Obra:</strong> <span id="pp_obra_nome"></span></div>
+      <div class="prog-line"><strong>Contrato:</strong> <span id="pp_contrato"></span></div>
+      <div class="prog-line"><strong>Cliente:</strong> <span id="pp_cliente"></span></div>
+      <div class="prog-line"><strong>CNPJ:</strong> <span id="pp_cnpj"></span></div>
+      <div class="prog-line"><strong>Endereço Cliente:</strong> <span id="pp_end_cliente"></span></div>
+      <div class="prog-line"><strong>CNO:</strong> <span id="pp_cno"></span></div>
+      <div class="prog-line"><strong>Email:</strong> <span id="pp_email"></span></div>
+      <div class="prog-line"><strong>Contato da Obra:</strong> <span id="pp_contato_obra"></span></div>
+      <div class="prog-line"><strong>Solicitante:</strong> <span id="pp_solicitante"></span></div>
+      <div class="prog-line"><strong>End. Obra:</strong> <span id="pp_end_obra"></span></div>
+      <div class="prog-line"><strong>FCK:</strong> <span id="pp_fck"></span></div>
+      <div class="prog-line"><strong>SLP:</strong> <span id="pp_slp"></span></div>
+      <div class="prog-line"><strong>Brita:</strong> <span id="pp_brita"></span></div>
+      <div class="prog-line"><strong>Preço:</strong> R$ <span id="pp_preco"></span></div>
+      <div class="prog-line"><strong>Bomba:</strong> R$ <span id="pp_bomba"></span></div>
+      <div class="prog-line"><strong>Volume:</strong> <span id="pp_volume"></span></div>
+      <div class="prog-line"><strong>Forma de Pagamento:</strong> <span id="pp_pagamento"></span></div>
+      <div class="prog-line"><strong>Observação:</strong> <span id="pp_obs"></span></div>
+    </div>
+
+    <div class="table-container">
+      <table class="app-table">
+        <thead><tr><th>Data</th><th>Cliente</th><th>Obra</th><th>Ações</th></tr></thead>
+        <tbody id="listaProg"></tbody>
+      </table>
+    </div>
+  </div>
 </div>
 
 <div id="vendedor" class="section no-print">
-    <div class="card">
-        <h3>Perfil do Vendedor</h3>
-        <input type="text" id="v_nome" class="field" placeholder="Nome Completo">
-        <input type="tel" id="v_cel" class="field" placeholder="WhatsApp" maxlength="15" onkeyup="mascaraTel(this)">
-        <button class="btn" onclick="salvarV()">SALVAR PERFIL</button>
-    </div>
+  <div class="card">
+    <h3>Perfil do Vendedor</h3>
+    <input type="text" id="v_nome" class="field" placeholder="Nome Completo">
+    <input type="tel" id="v_cel" class="field" placeholder="WhatsApp" maxlength="15">
+    <button class="btn" onclick="salvarV()">SALVAR PERFIL</button>
+  </div>
 </div>
 
 <div id="doc-impressao">
-    <img src="logotipo.webp" class="print-logo">
-    <div contenteditable="true">
-        <p><span id="p_cidade"></span>, MG, <span id="p_data"></span></p>
-        <p><strong>À <span id="p_cliente"></span></strong></p>
-        <p>OBRA: <span id="p_obra"></span></p>
-        <p><strong>A/C: <span id="p_responsavel"></span></strong></p>
-    </div>
+  <img src="logotipo.webp" class="print-logo">
+  <div contenteditable="true">
+    <p><span id="p_cidade"></span>, MG, <span id="p_data"></span></p>
+    <p><strong>À <span id="p_cliente"></span></strong></p>
+    <p>OBRA: <span id="p_obra"></span></p>
+    <p><strong>A/C: <span id="p_responsavel"></span></strong></p>
+  </div>
 
-    <div class="section-title">TRAÇO</div>
-    <table class="print-table">
-        <thead>
-            <tr>
-                <th>VOLUME</th>
-                <th>FCK</th>
-                <th>BRITA</th>
-                <th>SLUMP</th>
-                <th>PREÇO (R$/m³)</th>
-            </tr>
-        </thead>
-        <tbody id="p_tabela_itens"></tbody>
-    </table>
+  <div class="section-title">TRAÇO</div>
+  <table class="print-table">
+    <thead>
+      <tr>
+        <th>VOLUME</th><th>FCK</th><th>BRITA</th><th>SLUMP</th><th>PREÇO (R$/m³)</th>
+      </tr>
+    </thead>
+    <tbody id="p_tabela_itens"></tbody>
+  </table>
 
-    <div class="section-title">ADICIONAIS E CONDIÇÕES</div>
-    <div>
-        <div class="list-item">Taxa de bomba: R$ <span id="pr_bomba"></span>/m³ (mínimo de <span id="pr_min_b"></span> m³)</div>
-        <div class="list-item">Adição de fibra: R$ <span id="pr_fibra"></span>/m³</div>
-        <div class="list-item">M3 faltante: R$ <span id="pr_faltante"></span>/m³ abaixo de 5 m³</div>
-        <div class="list-item">Permanência: R$ <span id="pr_perm"></span>/hora após 120 min.</div>
-        <div class="list-item">2ª a 6ª após 18h: <span id="pr_h_uteis"></span> | Sábados após 12h: <span id="pr_h_sab"></span></div>
-        <div class="list-item">Domingos/Feriados: <span id="pr_h_dom"></span> (Mín. <span id="pr_min_dom"></span>)</div>
-        <div class="list-item">RAC: <span id="pr_rac"></span> | ROC: <span id="pr_roc"></span></div>
-        <div class="list-item">Pagamento: <span id="pr_prazo"></span></div>
-        <div class="list-item">Obs: <span id="p_obs"></span></div>
-    </div>
+  <div class="section-title">ADICIONAIS E CONDIÇÕES</div>
+  <div>
+    <div class="list-item">Taxa de bomba: R$ <span id="pr_bomba"></span>/m³ (mínimo de <span id="pr_min_b"></span> m³)</div>
+    <div class="list-item">Adição de fibra: R$ <span id="pr_fibra"></span>/m³</div>
+    <div class="list-item">M3 faltante: R$ <span id="pr_faltante"></span>/m³ abaixo de 5 m³</div>
+    <div class="list-item">Permanência: R$ <span id="pr_perm"></span>/hora após 120 min.</div>
+    <div class="list-item">2ª a 6ª após 18h: <span id="pr_h_uteis"></span> | Sábados após 12h: <span id="pr_h_sab"></span></div>
+    <div class="list-item">Domingos/Feriados: <span id="pr_h_dom"></span> (Mín. <span id="pr_min_dom"></span>)</div>
+    <div class="list-item">RAC: <span id="pr_rac"></span> | ROC: <span id="pr_roc"></span></div>
+    <div class="list-item">Pagamento: <span id="pr_prazo"></span></div>
+    <div class="list-item">Obs: <span id="p_obs"></span></div>
+  </div>
 
-    <div class="signature-area">
-        <div class="sig-box">Atenciosamente,<br><strong><span id="p_vend"></span></strong><br><span id="p_v_cel"></span></div>
-        <div class="sig-box">Aceite do Cliente<br>Data: ___/___/___</div>
-    </div>
+  <div class="signature-area">
+    <div class="sig-box">Atenciosamente,<br><strong><span id="p_vend"></span></strong><br><span id="p_v_cel"></span></div>
+    <div class="sig-box">Aceite do Cliente<br>Data: ___/___/___</div>
+  </div>
 </div>
 
 <nav class="nav-bar no-print">
-    <button class="nav-item active" onclick="tab('agenda', this)">AGENDA</button>
-    <button class="nav-item" onclick="tab('proposta', this)">PROPOSTA</button>
-    <button class="nav-item" onclick="tab('programacao', this)">PROGRAMAÇÃO</button>
-    <button class="nav-item" onclick="tab('vendedor', this)">PERFIL</button>
+  <button class="nav-item active" onclick="tab('agenda', this)">AGENDA</button>
+  <button class="nav-item" onclick="tab('proposta', this)">PROPOSTA</button>
+  <button class="nav-item" onclick="tab('programacao', this)">PROGRAMAÇÃO</button>
+  <button class="nav-item" onclick="tab('vendedor', this)">PERFIL</button>
 </nav>
 
 <script type="module">
@@ -469,520 +423,478 @@ const fcks = ["10 MPa","15 MPa","20 MPa","25 MPa","30 Mpa (HE)","30 Mpa","30 Mpa
 const fs = document.getElementById('fck');
 fcks.forEach(v => fs.innerHTML += `<option value="${v}">${v}</option>`);
 
-function mascaraTel(i) {
-    let v = i.value.replace(/\D/g, "");
-    v = v.replace(/^(\d{2})(\d)/g, "($1) $2");
-    v = v.replace(/(\d)(\d{4})$/, "$1-$2");
-    i.value = v;
+function tab(id, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const sec = document.getElementById(id);
+  if (sec) sec.classList.add('active');
+  if (btn) btn.classList.add('active');
 }
 
-function tab(id, btn) {
-    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-    const sec = document.getElementById(id);
-    if (sec) sec.classList.add('active');
-    if (btn) btn.classList.add('active');
+function mascaraTel(i) {
+  let v = i.value.replace(/\D/g, "");
+  v = v.replace(/^(\d{2})(\d)/g, "($1) $2");
+  v = v.replace(/(\d)(\d{4})$/, "$1-$2");
+  i.value = v;
 }
 
 async function autoCEP(v) {
-    if(v.length === 8) {
-        const r = await fetch(`https://viacep.com.br/ws/${v}/json/`);
-        const d = await r.json();
-        if(!d.erro) document.getElementById('end').value = `${d.logradouro}, ${d.bairro}`;
-    }
+  if (v.length === 8) {
+    const r = await fetch(`https://viacep.com.br/ws/${v}/json/`);
+    const d = await r.json();
+    if (!d.erro) document.getElementById('end').value = `${d.logradouro}, ${d.bairro}`;
+  }
 }
 
 function addLinha() {
-    const volume = parseFloat(document.getElementById('volume').value) || 0;
-    const base = parseFloat(document.getElementById('vBase').value) || 0;
-    const margem = parseFloat(document.getElementById('margem').value) || 0;
-    if(volume <= 0) return alert("Insira o volume!");
-    if(base <= 0) return alert("Insira um valor!");
-    itensProposta.push({
-        volume: volume,
-        fck: document.getElementById('fck').value,
-        brita: document.getElementById('brita').value,
-        preco: base * (1 + margem/100)
-    });
-    renderItens();
+  const volume = parseFloat(document.getElementById('volume').value) || 0;
+  const base = parseFloat(document.getElementById('vBase').value) || 0;
+  const margem = parseFloat(document.getElementById('margem').value) || 0;
+  if (volume <= 0) return alert("Insira o volume!");
+  if (base <= 0) return alert("Insira um valor!");
+  itensProposta.push({
+    volume,
+    fck: document.getElementById('fck').value,
+    brita: document.getElementById('brita').value,
+    preco: base * (1 + margem / 100)
+  });
+  renderItens();
 }
 
 function renderItens() {
-    const t = document.getElementById('itensTmp');
-    t.innerHTML = '';
-    itensProposta.forEach((it, i) => {
-        t.innerHTML += `<tr>
-            <td>${it.volume}</td>
-            <td>${it.fck}</td>
-            <td>${it.brita}</td>
-            <td>R$ ${Number(it.preco).toFixed(2)}</td>
-            <td onclick="itensProposta.splice(${i},1);renderItens()">❌</td>
-        </tr>`;
-    });
+  const t = document.getElementById('itensTmp');
+  t.innerHTML = '';
+  itensProposta.forEach((it, i) => {
+    t.innerHTML += `<tr>
+      <td>${it.volume}</td>
+      <td>${it.fck}</td>
+      <td>${it.brita}</td>
+      <td>R$ ${Number(it.preco).toFixed(2)}</td>
+      <td onclick="removerItem(${i})">❌</td>
+    </tr>`;
+  });
 }
 
-async function salvarC() {
-    const idx = document.getElementById('idx_c').value;
-    const obj = {
-        data: new Date().toLocaleDateString('pt-BR'),
-        nome: document.getElementById('nome').value,
-        doc: document.getElementById('doc_c').value,
-        tel: document.getElementById('tel_c').value,
-        end: document.getElementById('end').value,
-        num: document.getElementById('num').value,
-        comp: document.getElementById('comp').value
-    };
-    if (!obj.nome) return alert("Informe o nome do cliente!");
-
-    if (idx === "-1") {
-        await addDoc(collection(db, "clientes"), obj);
-    } else {
-        const refId = clientesCache[Number(idx)]?.id;
-        if (!refId) return alert("Cliente não encontrado para atualizar.");
-        await updateDoc(doc(db, "clientes", refId), obj);
-    }
-
-    await atualizarC();
-    limparC();
-    alert("Cliente salvo!");
-}
-
-async function atualizarC() {
-    const s = document.getElementById('selC');
-    const sp = document.getElementById('selProgC');
-    const l = document.getElementById('listaC');
-
-    s.innerHTML = '<option value="">Selecionar Cliente...</option>';
-    sp.innerHTML = '<option value="">Selecionar Cliente...</option>';
-    l.innerHTML = '';
-
-    const snap = await getDocs(query(collection(db, "clientes"), orderBy("data", "desc")));
-    clientesCache = [];
-    snap.forEach(d => clientesCache.push({ id: d.id, ...d.data() }));
-
-    clientesCache.forEach((c, i) => {
-        s.innerHTML += `<option value="${c.id}">${c.nome}</option>`;
-        sp.innerHTML += `<option value="${c.id}">${c.nome}</option>`;
-        l.innerHTML += `<tr>
-          <td>${c.data || ''}</td>
-          <td>${c.nome || ''}</td>
-          <td class="actions">
-            <span onclick="editarC(${i})">✏️</span>
-            <span onclick="excluirC('${c.id}')">🗑️</span>
-          </td>
-        </tr>`;
-    });
-}
-
-function editarC(i) {
-    const c = clientesCache[i];
-    if (!c) return;
-    document.getElementById('nome').value = c.nome || '';
-    document.getElementById('doc_c').value = c.doc || '';
-    document.getElementById('tel_c').value = c.tel || '';
-    document.getElementById('end').value = c.end || '';
-    document.getElementById('num').value = c.num || '';
-    document.getElementById('comp').value = c.comp || '';
-    document.getElementById('idx_c').value = i;
-    document.getElementById('btn_cli').innerText = "ATUALIZAR";
-}
-
-async function excluirC(id) {
-    if (confirm("Excluir cliente?")) {
-        await deleteDoc(doc(db, "clientes", id));
-        await atualizarC();
-        await listarP();
-        await listarProgramacoes();
-    }
-}
-
-function limparC() {
-    document.getElementById('idx_c').value = "-1";
-    document.getElementById('btn_cli').innerText = "SALVAR CLIENTE";
-    ['nome','tel_c','end','num','comp','cep','doc_c'].forEach(id => document.getElementById(id).value = "");
-}
-
-async function salvarP() {
-    const cliente = document.getElementById('selC').value;
-    if(cliente === "") return alert("Selecione um cliente!");
-    if(itensProposta.length === 0) return alert("Adicione itens!");
-
-    const obj = {
-        data: new Date().toLocaleDateString('pt-BR'),
-        cliId: cliente,
-        status: document.getElementById('status').value,
-        itens: [...itensProposta],
-        resp: document.getElementById('contato_obra').value,
-        filial: document.getElementById('filial').value,
-        obs: document.getElementById('obs').value,
-        cfg: {
-            b: document.getElementById('cfg_bomba').value,
-            mb: document.getElementById('cfg_min_b').value,
-            f: document.getElementById('cfg_fibra').value,
-            fal: document.getElementById('cfg_faltante').value,
-            p: document.getElementById('cfg_perm').value,
-            rac: document.getElementById('cfg_rac').value,
-            roc: document.getElementById('cfg_roc').value,
-            prz: document.getElementById('cfg_prazo').value,
-            hu: document.getElementById('cfg_h_uteis').value,
-            hs: document.getElementById('cfg_h_sab').value,
-            hd: document.getElementById('cfg_h_dom').value,
-            md: document.getElementById('cfg_min_dom').value
-        }
-    };
-
-    const idx = document.getElementById('idx_p').value;
-    if(idx === "-1") {
-        await addDoc(collection(db, "propostas"), obj);
-    } else {
-        const refId = propostasCache[Number(idx)]?.id;
-        if (!refId) return alert("Proposta não encontrada para atualizar.");
-        await updateDoc(doc(db, "propostas", refId), obj);
-    }
-
-    await listarP();
-    alert("Proposta salva!");
-}
-
-async function listarP() {
-    const dbP = document.getElementById('listaP');
-    const dbClientes = clientesCache.length ? clientesCache : await carregarClientesCache();
-    dbP.innerHTML = '';
-
-    const snap = await getDocs(query(collection(db, "propostas"), orderBy("data", "desc")));
-    propostasCache = [];
-    snap.forEach(d => propostasCache.push({ id: d.id, ...d.data() }));
-
-    propostasCache.forEach((p, i) => {
-        const cli = dbClientes.find(c => c.id === p.cliId);
-        const nomeCli = cli ? cli.nome : "Excluído";
-        dbP.innerHTML += `<tr>
-            <td>${p.data || ''}</td>
-            <td>${nomeCli}</td>
-            <td><span class="badge bg-${p.status}">${p.status}</span></td>
-            <td class="actions">
-                <span onclick="editarP(${i})">✏️</span>
-                <span onclick="excluirP('${p.id}')">🗑️</span>
-            </td>
-        </tr>`;
-    });
-}
-
-function editarP(i) {
-    const p = propostasCache[i];
-    if (!p) return;
-    document.getElementById('selC').value = p.cliId || '';
-    document.getElementById('status').value = p.status || 'andamento';
-    document.getElementById('contato_obra').value = p.resp || '';
-    document.getElementById('filial').value = p.filial || 'Divinopolis';
-    document.getElementById('obs').value = p.obs || '';
-    itensProposta = [...(p.itens || [])];
-    renderItens();
-
-    if (p.cfg) {
-        document.getElementById('cfg_bomba').value = p.cfg.b || '';
-        document.getElementById('cfg_min_b').value = p.cfg.mb || '';
-        document.getElementById('cfg_fibra').value = p.cfg.f || '';
-        document.getElementById('cfg_faltante').value = p.cfg.fal || '';
-        document.getElementById('cfg_perm').value = p.cfg.p || '';
-        document.getElementById('cfg_rac').value = p.cfg.rac || '';
-        document.getElementById('cfg_roc').value = p.cfg.roc || '';
-        document.getElementById('cfg_prazo').value = p.cfg.prz || '';
-        document.getElementById('cfg_h_uteis').value = p.cfg.hu || '';
-        document.getElementById('cfg_h_sab').value = p.cfg.hs || '';
-        document.getElementById('cfg_h_dom').value = p.cfg.hd || '';
-        document.getElementById('cfg_min_dom').value = p.cfg.md || '';
-    }
-
-    document.getElementById('idx_p').value = i;
-    document.getElementById('btn_prop').innerText = "ATUALIZAR";
-}
-
-async function excluirP(id) {
-    if(confirm("Excluir proposta?")) {
-        await deleteDoc(doc(db, "propostas", id));
-        await listarP();
-    }
-}
-
-async function salvarV() {
-    const obj = {
-        nome: document.getElementById('v_nome').value,
-        cel: document.getElementById('v_cel').value
-    };
-    await setDoc(doc(db, "perfil_vendedor", "principal"), obj, { merge: true });
-    alert("Perfil Salvo!");
-}
-
-async function carregarVendedor() {
-    const snap = await getDoc(doc(db, "perfil_vendedor", "principal"));
-    if (snap.exists()) {
-        const v = snap.data();
-        document.getElementById('v_nome').value = v.nome || '';
-        document.getElementById('v_cel').value = v.cel || '';
-    }
-}
-
-async function salvarProgramacao() {
-    const obj = {
-        data: new Date().toLocaleDateString('pt-BR'),
-        cliId: document.getElementById('selProgC').value,
-        obra_nome: document.getElementById('prog_obra_nome').value,
-        contrato: document.getElementById('prog_contrato').value,
-        solicitante: document.getElementById('prog_solicitante').value,
-        cno: document.getElementById('prog_cno').value,
-        email: document.getElementById('prog_email').value,
-        contato_obra: document.getElementById('prog_contato_obra').value,
-        volume: document.getElementById('prog_volume').value,
-        fck: document.getElementById('prog_fck').value,
-        slp: document.getElementById('prog_slp').value,
-        brita: document.getElementById('prog_brita').value,
-        preco: document.getElementById('prog_preco').value,
-        bomba: document.getElementById('prog_bomba').value,
-        pagamento: document.getElementById('prog_pagamento').value,
-        end_obra: document.getElementById('prog_end_obra').value,
-        obs: document.getElementById('prog_obs').value
-    };
-
-    const idx = document.getElementById('idx_prog').value;
-    if(idx === "-1") {
-        await addDoc(collection(db, "programacoes"), obj);
-    } else {
-        const refId = programacoesCache[Number(idx)]?.id;
-        if (!refId) return alert("Programação não encontrada para atualizar.");
-        await updateDoc(doc(db, "programacoes", refId), obj);
-    }
-
-    await listarProgramacoes();
-    alert("Programação salva!");
-}
-
-async function listarProgramacoes() {
-    const l = document.getElementById('listaProg');
-    const dbClientes = clientesCache.length ? clientesCache : await carregarClientesCache();
-    l.innerHTML = '';
-
-    const snap = await getDocs(query(collection(db, "programacoes"), orderBy("data", "desc")));
-    programacoesCache = [];
-    snap.forEach(d => programacoesCache.push({ id: d.id, ...d.data() }));
-
-    programacoesCache.forEach((p, i) => {
-        const cli = dbClientes.find(c => c.id === p.cliId);
-        const nomeCli = cli ? cli.nome : "Excluído";
-        l.innerHTML += `<tr>
-            <td>${p.data || ''}</td>
-            <td>${nomeCli}</td>
-            <td>${p.obra_nome || ''}</td>
-            <td class="actions">
-                <span onclick="editarProgramacao(${i})">✏️</span>
-                <span onclick="excluirProgramacao('${p.id}')">🗑️</span>
-            </td>
-        </tr>`;
-    });
-    atualizarExtratoProgramacao();
-}
-
-function editarProgramacao(i) {
-    const p = programacoesCache[i];
-    if (!p) return;
-    document.getElementById('selProgC').value = p.cliId || '';
-    document.getElementById('prog_obra_nome').value = p.obra_nome || '';
-    document.getElementById('prog_contrato').value = p.contrato || '';
-    document.getElementById('prog_solicitante').value = p.solicitante || '';
-    document.getElementById('prog_cno').value = p.cno || '';
-    document.getElementById('prog_email').value = p.email || '';
-    document.getElementById('prog_contato_obra').value = p.contato_obra || '';
-    document.getElementById('prog_volume').value = p.volume || '';
-    document.getElementById('prog_fck').value = p.fck || '';
-    document.getElementById('prog_slp').value = p.slp || '';
-    document.getElementById('prog_brita').value = p.brita || '';
-    document.getElementById('prog_preco').value = p.preco || '';
-    document.getElementById('prog_bomba').value = p.bomba || '';
-    document.getElementById('prog_pagamento').value = p.pagamento || '';
-    document.getElementById('prog_end_obra').value = p.end_obra || '';
-    document.getElementById('prog_obs').value = p.obs || '';
-    document.getElementById('idx_prog').value = i;
-}
-
-async function excluirProgramacao(id) {
-    if(confirm("Excluir programação?")) {
-        await deleteDoc(doc(db, "programacoes", id));
-        await listarProgramacoes();
-    }
-}
-
-async function carregarClienteProgramacao(id) {
-    if (!id) return;
-    const c = clientesCache.find(x => x.id === id);
-    if (c) document.getElementById('prog_contato_obra').value = c.tel || document.getElementById('prog_contato_obra').value || '';
-    atualizarExtratoProgramacao();
-}
-
-async function gerarTxtProgramacao() {
-    const cliId = document.getElementById('selProgC').value;
-    const cli = clientesCache.find(c => c.id === cliId) || {};
-
-    const txt = [
-        `Nome da obra: ${document.getElementById('prog_obra_nome').value || ''}`,
-        `Contrato: ${document.getElementById('prog_contrato').value || ''}`,
-        `--------------------------------------`,
-        `Cliente: ${cli.nome || ''}`,
-        `CNPJ:${cli.doc || ''}`,
-        `Endereço Cliente: ${(cli.end || '')}${cli.num ? ', ' + cli.num : ''}`,
-        `${cli.comp || ''}`,
-        `CNO: ${document.getElementById('prog_cno').value || ''}`,
-        `Email: ${document.getElementById('prog_email').value || ''}`,
-        `Contato da obra : ${document.getElementById('prog_contato_obra').value || ''}`,
-        `Solicitante: ${document.getElementById('prog_solicitante').value || ''}`,
-        `---------------------------------------`,
-        `End. Obra : `,
-        `${document.getElementById('prog_end_obra').value || ''}`,
-        `--------------------------------------`,
-        `Fck ${document.getElementById('prog_fck').value || ''} SLP ${document.getElementById('prog_slp').value || ''} ${document.getElementById('prog_brita').value || ''}   $. ${document.getElementById('prog_preco').value || ''} bomba ---------------------R$.     ${document.getElementById('prog_bomba').value || ''} `,
-        `Volume : ${document.getElementById('prog_volume').value || ''} Mandar 10 e aguardar`,
-        ``,
-        `Forma pagamento: ${document.getElementById('prog_pagamento').value || ''}`,
-        `(${document.getElementById('prog_obs').value || ''})`
-    ].join('\n');
-
-    const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = 'programacao.txt';
-    link.click();
-}
-
-function atualizarExtratoProgramacao() {
-    const cliId = document.getElementById('selProgC').value;
-    const cli = clientesCache.find(c => c.id === cliId) || {};
-
-    document.getElementById('pp_obra_nome').innerText = document.getElementById('prog_obra_nome').value || '';
-    document.getElementById('pp_contrato').innerText = document.getElementById('prog_contrato').value || '';
-    document.getElementById('pp_cliente').innerText = cli.nome || '';
-    document.getElementById('pp_cnpj').innerText = cli.doc || '';
-    document.getElementById('pp_end_cliente').innerText = `${cli.end || ''}${cli.num ? ', ' + cli.num : ''}${cli.comp ? ' - ' + cli.comp : ''}`;
-    document.getElementById('pp_cno').innerText = document.getElementById('prog_cno').value || '';
-    document.getElementById('pp_email').innerText = document.getElementById('prog_email').value || '';
-    document.getElementById('pp_contato_obra').innerText = document.getElementById('prog_contato_obra').value || '';
-    document.getElementById('pp_solicitante').innerText = document.getElementById('prog_solicitante').value || '';
-    document.getElementById('pp_end_obra').innerText = document.getElementById('prog_end_obra').value || '';
-    document.getElementById('pp_fck').innerText = document.getElementById('prog_fck').value || '';
-    document.getElementById('pp_slp').innerText = document.getElementById('prog_slp').value || '';
-    document.getElementById('pp_brita').innerText = document.getElementById('prog_brita').value || '';
-    document.getElementById('pp_preco').innerText = document.getElementById('prog_preco').value || '';
-    document.getElementById('pp_bomba').innerText = document.getElementById('prog_bomba').value || '';
-    document.getElementById('pp_volume').innerText = document.getElementById('prog_volume').value || '';
-    document.getElementById('pp_pagamento').innerText = document.getElementById('prog_pagamento').value || '';
-    document.getElementById('pp_obs').innerText = document.getElementById('prog_obs').value || '';
-}
-
-function imprimir() {
-    try {
-        const cliId = document.getElementById('selC').value;
-        if (cliId === "" || itensProposta.length === 0) {
-            alert("Selecione o cliente e adicione itens!");
-            return;
-        }
-
-        const cli = clientesCache.find(c => c.id === cliId) || {};
-        const vend = { nome: document.getElementById('v_nome').value || '', cel: document.getElementById('v_cel').value || '' };
-
-        document.getElementById('p_cidade').innerText = document.getElementById('filial').value;
-        document.getElementById('p_data').innerText = new Date().toLocaleDateString('pt-BR');
-        document.getElementById('p_cliente').innerText = (cli.nome || '').toUpperCase();
-        document.getElementById('p_obra').innerText = `${cli.end || ''}, ${cli.num || ''} ${cli.comp ? '- ' + cli.comp : ''}`.toUpperCase();
-        document.getElementById('p_responsavel').innerText = document.getElementById('contato_obra').value || "RESPONSÁVEL";
-
-        const tb = document.getElementById('p_tabela_itens');
-        tb.innerHTML = '';
-        itensProposta.forEach(it => {
-            tb.innerHTML += `<tr>
-                <td>${it.volume}</td>
-                <td>${it.fck}</td>
-                <td>${it.brita}</td>
-                <td>120±20</td>
-                <td>R$ ${Number(it.preco).toFixed(2)}</td>
-            </tr>`;
-        });
-
-        document.getElementById('pr_bomba').innerText = document.getElementById('cfg_bomba').value;
-        document.getElementById('pr_min_b').innerText = document.getElementById('cfg_min_b').value;
-        document.getElementById('pr_fibra').innerText = document.getElementById('cfg_fibra').value;
-        document.getElementById('pr_faltante').innerText = document.getElementById('cfg_faltante').value;
-        document.getElementById('pr_perm').innerText = document.getElementById('cfg_perm').value;
-        document.getElementById('pr_h_uteis').innerText = document.getElementById('cfg_h_uteis').value;
-        document.getElementById('pr_h_sab').innerText = document.getElementById('cfg_h_sab').value;
-        document.getElementById('pr_h_dom').innerText = document.getElementById('cfg_h_dom').value;
-        document.getElementById('pr_min_dom').innerText = document.getElementById('cfg_min_dom').value;
-        document.getElementById('pr_rac').innerText = document.getElementById('cfg_rac').value;
-        document.getElementById('pr_roc').innerText = document.getElementById('cfg_roc').value;
-        document.getElementById('pr_prazo').innerText = document.getElementById('cfg_prazo').value;
-        document.getElementById('p_obs').innerText = document.getElementById('obs').value || "A COMBINAR";
-        document.getElementById('p_vend').innerText = (vend.nome || '').toUpperCase();
-        document.getElementById('p_v_cel').innerText = vend.cel || '';
-
-        setTimeout(() => window.print(), 100);
-    } catch (e) {
-        alert("Erro ao gerar impressão: " + e.message);
-    }
+function removerItem(i) {
+  itensProposta.splice(i, 1);
+  renderItens();
 }
 
 async function carregarClientesCache() {
-    const snap = await getDocs(query(collection(db, "clientes"), orderBy("data", "desc")));
-    clientesCache = [];
-    snap.forEach(d => clientesCache.push({ id: d.id, ...d.data() }));
-    return clientesCache;
+  const snap = await getDocs(query(collection(db, "clientes"), orderBy("data", "desc")));
+  clientesCache = [];
+  snap.forEach(d => clientesCache.push({ id: d.id, ...d.data() }));
+  return clientesCache;
 }
 
-async function carregarVendedor() {
-    const snap = await getDoc(doc(db, "perfil_vendedor", "principal"));
-    if (snap.exists()) {
-        const v = snap.data();
-        document.getElementById('v_nome').value = v.nome || '';
-        document.getElementById('v_cel').value = v.cel || '';
-    }
+async function atualizarC() {
+  const s = document.getElementById('selC');
+  const sp = document.getElementById('selProgC');
+  const l = document.getElementById('listaC');
+
+  s.innerHTML = '<option value="">Selecionar Cliente...</option>';
+  sp.innerHTML = '<option value="">Selecionar Cliente...</option>';
+  l.innerHTML = '';
+
+  await carregarClientesCache();
+
+  clientesCache.forEach((c, i) => {
+    s.innerHTML += `<option value="${c.id}">${c.nome}</option>`;
+    sp.innerHTML += `<option value="${c.id}">${c.nome}</option>`;
+    l.innerHTML += `<tr>
+      <td>${c.data || ''}</td>
+      <td>${c.nome || ''}</td>
+      <td class="actions">
+        <span onclick="editarC(${i})">✏️</span>
+        <span onclick="excluirC('${c.id}')">🗑️</span>
+      </td>
+    </tr>`;
+  });
 }
 
-async function salvarProgramacaoPreview() {
-    await listarProgramacoes();
+function editarC(i) {
+  const c = clientesCache[i];
+  if (!c) return;
+  document.getElementById('nome').value = c.nome || '';
+  document.getElementById('doc_c').value = c.doc || '';
+  document.getElementById('tel_c').value = c.tel || '';
+  document.getElementById('end').value = c.end || '';
+  document.getElementById('num').value = c.num || '';
+  document.getElementById('comp').value = c.comp || '';
+  document.getElementById('idx_c').value = i;
+  document.getElementById('btn_cli').innerText = "ATUALIZAR";
 }
 
-async function inicializar() {
-    await carregarClientesCache();
-    await carregarVendedor();
+function limparC() {
+  document.getElementById('idx_c').value = "-1";
+  document.getElementById('btn_cli').innerText = "SALVAR CLIENTE";
+  ['nome','tel_c','end','num','comp','cep','doc_c'].forEach(id => document.getElementById(id).value = "");
+}
+
+async function salvarC() {
+  const idx = document.getElementById('idx_c').value;
+  const obj = {
+    data: new Date().toLocaleDateString('pt-BR'),
+    nome: document.getElementById('nome').value,
+    doc: document.getElementById('doc_c').value,
+    tel: document.getElementById('tel_c').value,
+    end: document.getElementById('end').value,
+    num: document.getElementById('num').value,
+    comp: document.getElementById('comp').value
+  };
+  if (!obj.nome) return alert("Informe o nome do cliente!");
+
+  if (idx === "-1") {
+    await addDoc(collection(db, "clientes"), obj);
+  } else {
+    const refId = clientesCache[Number(idx)]?.id;
+    if (!refId) return alert("Cliente não encontrado para atualizar.");
+    await updateDoc(doc(db, "clientes", refId), obj);
+  }
+
+  await atualizarC();
+  limparC();
+  alert("Cliente salvo!");
+}
+
+async function excluirC(id) {
+  if (confirm("Excluir cliente?")) {
+    await deleteDoc(doc(db, "clientes", id));
     await atualizarC();
     await listarP();
     await listarProgramacoes();
-    atualizarExtratoProgramacao();
+  }
+}
+
+async function salvarP() {
+  const cliente = document.getElementById('selC').value;
+  if (cliente === "") return alert("Selecione um cliente!");
+  if (itensProposta.length === 0) return alert("Adicione itens!");
+
+  const obj = {
+    data: new Date().toLocaleDateString('pt-BR'),
+    cliId: cliente,
+    status: document.getElementById('status').value,
+    itens: [...itensProposta],
+    resp: document.getElementById('contato_obra').value,
+    filial: document.getElementById('filial').value,
+    obs: document.getElementById('obs').value,
+    cfg: {
+      b: document.getElementById('cfg_bomba').value,
+      mb: document.getElementById('cfg_min_b').value,
+      f: document.getElementById('cfg_fibra').value,
+      fal: document.getElementById('cfg_faltante').value,
+      p: document.getElementById('cfg_perm').value,
+      rac: document.getElementById('cfg_rac').value,
+      roc: document.getElementById('cfg_roc').value,
+      prz: document.getElementById('cfg_prazo').value,
+      hu: document.getElementById('cfg_h_uteis').value,
+      hs: document.getElementById('cfg_h_sab').value,
+      hd: document.getElementById('cfg_h_dom').value,
+      md: document.getElementById('cfg_min_dom').value
+    }
+  };
+
+  const idx = document.getElementById('idx_p').value;
+  if (idx === "-1") {
+    await addDoc(collection(db, "propostas"), obj);
+  } else {
+    const refId = propostasCache[Number(idx)]?.id;
+    if (!refId) return alert("Proposta não encontrada para atualizar.");
+    await updateDoc(doc(db, "propostas", refId), obj);
+  }
+
+  await listarP();
+  alert("Proposta salva!");
+}
+
+async function listarP() {
+  const dbP = document.getElementById('listaP');
+  dbP.innerHTML = '';
+  const snap = await getDocs(query(collection(db, "propostas"), orderBy("data", "desc")));
+  propostasCache = [];
+  snap.forEach(d => propostasCache.push({ id: d.id, ...d.data() }));
+
+  for (let i = 0; i < propostasCache.length; i++) {
+    const p = propostasCache[i];
+    const cli = clientesCache.find(c => c.id === p.cliId);
+    const nomeCli = cli ? cli.nome : "Excluído";
+    dbP.innerHTML += `<tr>
+      <td>${p.data || ''}</td>
+      <td>${nomeCli}</td>
+      <td><span class="badge bg-${p.status}">${p.status}</span></td>
+      <td class="actions">
+        <span onclick="editarP(${i})">✏️</span>
+        <span onclick="excluirP('${p.id}')">🗑️</span>
+      </td>
+    </tr>`;
+  }
+}
+
+function editarP(i) {
+  const p = propostasCache[i];
+  if (!p) return;
+  document.getElementById('selC').value = p.cliId || '';
+  document.getElementById('status').value = p.status || 'andamento';
+  document.getElementById('contato_obra').value = p.resp || '';
+  document.getElementById('filial').value = p.filial || 'Divinopolis';
+  document.getElementById('obs').value = p.obs || '';
+  itensProposta = [...(p.itens || [])];
+  renderItens();
+
+  if (p.cfg) {
+    document.getElementById('cfg_bomba').value = p.cfg.b || '';
+    document.getElementById('cfg_min_b').value = p.cfg.mb || '';
+    document.getElementById('cfg_fibra').value = p.cfg.f || '';
+    document.getElementById('cfg_faltante').value = p.cfg.fal || '';
+    document.getElementById('cfg_perm').value = p.cfg.p || '';
+    document.getElementById('cfg_rac').value = p.cfg.rac || '';
+    document.getElementById('cfg_roc').value = p.cfg.roc || '';
+    document.getElementById('cfg_prazo').value = p.cfg.prz || '';
+    document.getElementById('cfg_h_uteis').value = p.cfg.hu || '';
+    document.getElementById('cfg_h_sab').value = p.cfg.hs || '';
+    document.getElementById('cfg_h_dom').value = p.cfg.hd || '';
+    document.getElementById('cfg_min_dom').value = p.cfg.md || '';
+  }
+
+  document.getElementById('idx_p').value = i;
+  document.getElementById('btn_prop').innerText = "ATUALIZAR";
+}
+
+async function excluirP(id) {
+  if (confirm("Excluir proposta?")) {
+    await deleteDoc(doc(db, "propostas", id));
+    await listarP();
+  }
+}
+
+async function salvarV() {
+  const obj = {
+    nome: document.getElementById('v_nome').value,
+    cel: document.getElementById('v_cel').value
+  };
+  await setDoc(doc(db, "perfil_vendedor", "principal"), obj, { merge: true });
+  alert("Perfil Salvo!");
+}
+
+async function carregarVendedor() {
+  const snap = await getDoc(doc(db, "perfil_vendedor", "principal"));
+  if (snap.exists()) {
+    const v = snap.data();
+    document.getElementById('v_nome').value = v.nome || '';
+    document.getElementById('v_cel').value = v.cel || '';
+  }
+}
+
+async function salvarProgramacao() {
+  const obj = {
+    data: new Date().toLocaleDateString('pt-BR'),
+    cliId: document.getElementById('selProgC').value,
+    obra_nome: document.getElementById('prog_obra_nome').value,
+    contrato: document.getElementById('prog_contrato').value,
+    solicitante: document.getElementById('prog_solicitante').value,
+    cno: document.getElementById('prog_cno').value,
+    email: document.getElementById('prog_email').value,
+    contato_obra: document.getElementById('prog_contato_obra').value,
+    volume: document.getElementById('prog_volume').value,
+    fck: document.getElementById('prog_fck').value,
+    slp: document.getElementById('prog_slp').value,
+    brita: document.getElementById('prog_brita').value,
+    preco: document.getElementById('prog_preco').value,
+    bomba: document.getElementById('prog_bomba').value,
+    pagamento: document.getElementById('prog_pagamento').value,
+    end_obra: document.getElementById('prog_end_obra').value,
+    obs: document.getElementById('prog_obs').value
+  };
+
+  const idx = document.getElementById('idx_prog').value;
+  if (idx === "-1") {
+    await addDoc(collection(db, "programacoes"), obj);
+  } else {
+    const refId = programacoesCache[Number(idx)]?.id;
+    if (!refId) return alert("Programação não encontrada para atualizar.");
+    await updateDoc(doc(db, "programacoes", refId), obj);
+  }
+
+  await listarProgramacoes();
+  alert("Programação salva!");
+}
+
+async function listarProgramacoes() {
+  const l = document.getElementById('listaProg');
+  l.innerHTML = '';
+  const snap = await getDocs(query(collection(db, "programacoes"), orderBy("data", "desc")));
+  programacoesCache = [];
+  snap.forEach(d => programacoesCache.push({ id: d.id, ...d.data() }));
+
+  for (let i = 0; i < programacoesCache.length; i++) {
+    const p = programacoesCache[i];
+    const cli = clientesCache.find(c => c.id === p.cliId);
+    const nomeCli = cli ? cli.nome : "Excluído";
+    l.innerHTML += `<tr>
+      <td>${p.data || ''}</td>
+      <td>${nomeCli}</td>
+      <td>${p.obra_nome || ''}</td>
+      <td class="actions">
+        <span onclick="editarProgramacao(${i})">✏️</span>
+        <span onclick="excluirProgramacao('${p.id}')">🗑️</span>
+      </td>
+    </tr>`;
+  }
+  atualizarExtratoProgramacao();
+}
+
+function editarProgramacao(i) {
+  const p = programacoesCache[i];
+  if (!p) return;
+  document.getElementById('selProgC').value = p.cliId || '';
+  document.getElementById('prog_obra_nome').value = p.obra_nome || '';
+  document.getElementById('prog_contrato').value = p.contrato || '';
+  document.getElementById('prog_solicitante').value = p.solicitante || '';
+  document.getElementById('prog_cno').value = p.cno || '';
+  document.getElementById('prog_email').value = p.email || '';
+  document.getElementById('prog_contato_obra').value = p.contato_obra || '';
+  document.getElementById('prog_volume').value = p.volume || '';
+  document.getElementById('prog_fck').value = p.fck || '';
+  document.getElementById('prog_slp').value = p.slp || '';
+  document.getElementById('prog_brita').value = p.brita || '';
+  document.getElementById('prog_preco').value = p.preco || '';
+  document.getElementById('prog_bomba').value = p.bomba || '';
+  document.getElementById('prog_pagamento').value = p.pagamento || '';
+  document.getElementById('prog_end_obra').value = p.end_obra || '';
+  document.getElementById('prog_obs').value = p.obs || '';
+  document.getElementById('idx_prog').value = i;
+}
+
+async function excluirProgramacao(id) {
+  if (confirm("Excluir programação?")) {
+    await deleteDoc(doc(db, "programacoes", id));
+    await listarProgramacoes();
+  }
+}
+
+async function carregarClienteProgramacao(id) {
+  atualizarExtratoProgramacao();
+}
+
+function atualizarExtratoProgramacao() {
+  const cliId = document.getElementById('selProgC').value;
+  const cli = clientesCache.find(c => c.id === cliId) || {};
+
+  document.getElementById('pp_obra_nome').innerText = document.getElementById('prog_obra_nome').value || '';
+  document.getElementById('pp_contrato').innerText = document.getElementById('prog_contrato').value || '';
+  document.getElementById('pp_cliente').innerText = cli.nome || '';
+  document.getElementById('pp_cnpj').innerText = cli.doc || '';
+  document.getElementById('pp_end_cliente').innerText = `${cli.end || ''}${cli.num ? ', ' + cli.num : ''}${cli.comp ? ' - ' + cli.comp : ''}`;
+  document.getElementById('pp_cno').innerText = document.getElementById('prog_cno').value || '';
+  document.getElementById('pp_email').innerText = document.getElementById('prog_email').value || '';
+  document.getElementById('pp_contato_obra').innerText = document.getElementById('prog_contato_obra').value || '';
+  document.getElementById('pp_solicitante').innerText = document.getElementById('prog_solicitante').value || '';
+  document.getElementById('pp_end_obra').innerText = document.getElementById('prog_end_obra').value || '';
+  document.getElementById('pp_fck').innerText = document.getElementById('prog_fck').value || '';
+  document.getElementById('pp_slp').innerText = document.getElementById('prog_slp').value || '';
+  document.getElementById('pp_brita').innerText = document.getElementById('prog_brita').value || '';
+  document.getElementById('pp_preco').innerText = document.getElementById('prog_preco').value || '';
+  document.getElementById('pp_bomba').innerText = document.getElementById('prog_bomba').value || '';
+  document.getElementById('pp_volume').innerText = document.getElementById('prog_volume').value || '';
+  document.getElementById('pp_pagamento').innerText = document.getElementById('prog_pagamento').value || '';
+  document.getElementById('pp_obs').innerText = document.getElementById('prog_obs').value || '';
+}
+
+function imprimir() {
+  try {
+    const cliId = document.getElementById('selC').value;
+    if (cliId === "" || itensProposta.length === 0) {
+      alert("Selecione o cliente e adicione itens!");
+      return;
+    }
+
+    const cli = clientesCache.find(c => c.id === cliId) || {};
+    const vend = {
+      nome: document.getElementById('v_nome').value || '',
+      cel: document.getElementById('v_cel').value || ''
+    };
+
+    document.getElementById('p_cidade').innerText = document.getElementById('filial').value;
+    document.getElementById('p_data').innerText = new Date().toLocaleDateString('pt-BR');
+    document.getElementById('p_cliente').innerText = (cli.nome || '').toUpperCase();
+    document.getElementById('p_obra').innerText = `${cli.end || ''}, ${cli.num || ''} ${cli.comp ? '- ' + cli.comp : ''}`.toUpperCase();
+    document.getElementById('p_responsavel').innerText = document.getElementById('contato_obra').value || "RESPONSÁVEL";
+
+    const tb = document.getElementById('p_tabela_itens');
+    tb.innerHTML = '';
+    itensProposta.forEach(it => {
+      tb.innerHTML += `<tr>
+        <td>${it.volume}</td>
+        <td>${it.fck}</td>
+        <td>${it.brita}</td>
+        <td>120±20</td>
+        <td>R$ ${Number(it.preco).toFixed(2)}</td>
+      </tr>`;
+    });
+
+    document.getElementById('pr_bomba').innerText = document.getElementById('cfg_bomba').value;
+    document.getElementById('pr_min_b').innerText = document.getElementById('cfg_min_b').value;
+    document.getElementById('pr_fibra').innerText = document.getElementById('cfg_fibra').value;
+    document.getElementById('pr_faltante').innerText = document.getElementById('cfg_faltante').value;
+    document.getElementById('pr_perm').innerText = document.getElementById('cfg_perm').value;
+    document.getElementById('pr_h_uteis').innerText = document.getElementById('cfg_h_uteis').value;
+    document.getElementById('pr_h_sab').innerText = document.getElementById('cfg_h_sab').value;
+    document.getElementById('pr_h_dom').innerText = document.getElementById('cfg_h_dom').value;
+    document.getElementById('pr_min_dom').innerText = document.getElementById('cfg_min_dom').value;
+    document.getElementById('pr_rac').innerText = document.getElementById('cfg_rac').value;
+    document.getElementById('pr_roc').innerText = document.getElementById('cfg_roc').value;
+    document.getElementById('pr_prazo').innerText = document.getElementById('cfg_prazo').value;
+    document.getElementById('p_obs').innerText = document.getElementById('obs').value || "A COMBINAR";
+    document.getElementById('p_vend').innerText = (vend.nome || '').toUpperCase();
+    document.getElementById('p_v_cel').innerText = vend.cel || '';
+
+    setTimeout(() => window.print(), 100);
+  } catch (e) {
+    alert("Erro ao gerar impressão: " + e.message);
+  }
 }
 
 function exportarClientesExcel() {
-    if (clientesCache.length === 0) return alert("Não há clientes cadastrados.");
-    let csv = "\ufeffData;Nome;Documento;Telefone;Endereco;Numero;Complemento\n";
-    clientesCache.forEach(c => {
-        csv += `${c.data || ''};${c.nome || ''};${c.doc || ''};${c.tel || ''};${c.end || ''};${c.num || ''};${c.comp || ''}\n`;
-    });
-    baixarCSV(csv, "clientes_solomix.csv");
+  if (clientesCache.length === 0) return alert("Não há clientes cadastrados.");
+  let csv = "\ufeffData;Nome;Documento;Telefone;Endereco;Numero;Complemento\n";
+  clientesCache.forEach(c => {
+    csv += `${c.data || ''};${c.nome || ''};${c.doc || ''};${c.tel || ''};${c.end || ''};${c.num || ''};${c.comp || ''}\n`;
+  });
+  baixarCSV(csv, "clientes_solomix.csv");
 }
 
 function exportarPropostasExcel() {
-    if (propostasCache.length === 0) return alert("Não há propostas cadastradas.");
-    let csv = "\ufeffData;Cliente;Filial;Status;Responsavel;Valor_Total\n";
-    propostasCache.forEach(p => {
-        const cli = clientesCache.find(c => c.id === p.cliId);
-        const nomeCli = cli ? cli.nome : "Excluido";
-        const total = (p.itens || []).reduce((acc, it) => acc + Number(it.preco || 0), 0).toFixed(2);
-        csv += `${p.data || ''};${nomeCli};${p.filial || ''};${p.status || ''};${p.resp || ''};${total}\n`;
-    });
-    baixarCSV(csv, "propostas_solomix.csv");
+  if (propostasCache.length === 0) return alert("Não há propostas cadastradas.");
+  let csv = "\ufeffData;Cliente;Filial;Status;Responsavel;Valor_Total\n";
+  propostasCache.forEach(p => {
+    const cli = clientesCache.find(c => c.id === p.cliId);
+    const nomeCli = cli ? cli.nome : "Excluido";
+    const total = (p.itens || []).reduce((acc, it) => acc + Number(it.preco || 0), 0).toFixed(2);
+    csv += `${p.data || ''};${nomeCli};${p.filial || ''};${p.status || ''};${p.resp || ''};${total}\n`;
+  });
+  baixarCSV(csv, "propostas_solomix.csv");
 }
 
 function baixarCSV(csv, nome) {
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = nome;
-    link.click();
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = nome;
+  link.click();
+}
+
+async function inicializar() {
+  const fcks = ["10 MPa","15 MPa","20 MPa","25 MPa","30 Mpa (HE)","30 Mpa","30 Mpa (PISO)","40 MPa"];
+  const fs = document.getElementById('fck');
+  fs.innerHTML = '';
+  fcks.forEach(v => fs.innerHTML += `<option value="${v}">${v}</option>`);
+  await carregarClientesCache();
+  await carregarVendedor();
+  await atualizarC();
+  await listarP();
+  await listarProgramacoes();
+  atualizarExtratoProgramacao();
 }
 
 window.salvarC = salvarC;
@@ -1009,26 +921,43 @@ window.autoCEP = autoCEP;
 window.tab = tab;
 window.addLinha = addLinha;
 window.renderItens = renderItens;
+window.removerItem = removerItem;
 window.atualizarExtratoProgramacao = atualizarExtratoProgramacao;
 
-document.getElementById('prog_obra_nome').addEventListener('input', atualizarExtratoProgramacao);
-document.getElementById('prog_contrato').addEventListener('input', atualizarExtratoProgramacao);
-document.getElementById('prog_cno').addEventListener('input', atualizarExtratoProgramacao);
-document.getElementById('prog_email').addEventListener('input', atualizarExtratoProgramacao);
-document.getElementById('prog_contato_obra').addEventListener('input', atualizarExtratoProgramacao);
-document.getElementById('prog_solicitante').addEventListener('input', atualizarExtratoProgramacao);
-document.getElementById('prog_end_obra').addEventListener('input', atualizarExtratoProgramacao);
-document.getElementById('prog_fck').addEventListener('input', atualizarExtratoProgramacao);
-document.getElementById('prog_slp').addEventListener('input', atualizarExtratoProgramacao);
-document.getElementById('prog_brita').addEventListener('input', atualizarExtratoProgramacao);
-document.getElementById('prog_preco').addEventListener('input', atualizarExtratoProgramacao);
-document.getElementById('prog_bomba').addEventListener('input', atualizarExtratoProgramacao);
-document.getElementById('prog_pagamento').addEventListener('input', atualizarExtratoProgramacao);
-document.getElementById('prog_obs').addEventListener('input', atualizarExtratoProgramacao);
-document.getElementById('selProgC').addEventListener('change', atualizarExtratoProgramacao);
+function gerarTxtProgramacao() {
+  const cliId = document.getElementById('selProgC').value;
+  const cli = clientesCache.find(c => c.id === cliId) || {};
+  const txt = [
+    `Nome da obra: ${document.getElementById('prog_obra_nome').value || ''}`,
+    `Contrato: ${document.getElementById('prog_contrato').value || ''}`,
+    `Cliente: ${cli.nome || ''}`,
+    `CNPJ: ${cli.doc || ''}`,
+    `Endereço Cliente: ${(cli.end || '')}${cli.num ? ', ' + cli.num : ''}${cli.comp || ''}`,
+    `CNO: ${document.getElementById('prog_cno').value || ''}`,
+    `Email: ${document.getElementById('prog_email').value || ''}`,
+    `Contato da obra: ${document.getElementById('prog_contato_obra').value || ''}`,
+    `Solicitante: ${document.getElementById('prog_solicitante').value || ''}`,
+    `End. Obra: ${document.getElementById('prog_end_obra').value || ''}`,
+    `FCK: ${document.getElementById('prog_fck').value || ''}`,
+    `SLP: ${document.getElementById('prog_slp').value || ''}`,
+    `Brita: ${document.getElementById('prog_brita').value || ''}`,
+    `Preço: ${document.getElementById('prog_preco').value || ''}`,
+    `Bomba: ${document.getElementById('prog_bomba').value || ''}`,
+    `Volume: ${document.getElementById('prog_volume').value || ''}`,
+    `Forma pagamento: ${document.getElementById('prog_pagamento').value || ''}`,
+    `Observação: ${document.getElementById('prog_obs').value || ''}`
+  ].join('\\n');
+
+  const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'programacao.txt';
+  link.click();
+}
+window.gerarTxtProgramacao = gerarTxtProgramacao;
 
 window.onload = async () => {
-    await inicializar();
+  await inicializar();
 };
 </script>
 </body>
