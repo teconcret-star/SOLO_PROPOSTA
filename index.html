@@ -132,13 +132,14 @@
     <input type="text" id="nome" class="field" placeholder="Nome do Cliente / Construtora">
     <input type="text" id="doc_c" class="field" placeholder="CPF / CNPJ">
     <div class="row">
-      <div class="col"><input type="number" id="cep" class="field" placeholder="CEP"></div>
+      <div class="col"><input type="text" id="cep" class="field" placeholder="CEP" maxlength="8" oninput="autoCEP(this.value)"></div>
       <div class="col"><input type="text" id="num" class="field" placeholder="Nº"></div>
     </div>
     <input type="text" id="end" class="field" placeholder="Endereço">
     <input type="text" id="comp" class="field" placeholder="Complemento (Bloco, Obra...)">
-    <input type="tel" id="tel_c" class="field" placeholder="Contato" maxlength="15">
+    <input type="tel" id="tel_c" class="field" placeholder="Contato" maxlength="15" oninput="mascaraTel(this)">
     <button class="btn" id="btn_cli" onclick="salvarC()">SALVAR CLIENTE</button>
+    <button class="btn" style="background:#888; margin-top:5px;" onclick="limparC()">LIMPAR</button>
     <button class="btn" style="background:#28a745; margin-top:10px;" onclick="exportarClientesExcel()">📥 EXPORTAR CLIENTES (EXCEL)</button>
 
     <div class="table-container">
@@ -335,7 +336,7 @@
   <div class="card">
     <h3>Perfil do Vendedor</h3>
     <input type="text" id="v_nome" class="field" placeholder="Nome Completo">
-    <input type="tel" id="v_cel" class="field" placeholder="WhatsApp" maxlength="15">
+    <input type="tel" id="v_cel" class="field" placeholder="WhatsApp" maxlength="15" oninput="mascaraTel(this)">
     <button class="btn" onclick="salvarV()">SALVAR PERFIL</button>
   </div>
 </div>
@@ -418,10 +419,6 @@ let itensProposta = [];
 let clientesCache = [];
 let propostasCache = [];
 let programacoesCache = [];
-
-const fcks = ["10 MPa","15 MPa","20 MPa","25 MPa","30 Mpa (HE)","30 Mpa","30 Mpa (PISO)","40 MPa"];
-const fs = document.getElementById('fck');
-fcks.forEach(v => fs.innerHTML += `<option value="${v}">${v}</option>`);
 
 function tab(id, btn) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
@@ -946,7 +943,7 @@ function gerarTxtProgramacao() {
     `Volume: ${document.getElementById('prog_volume').value || ''}`,
     `Forma pagamento: ${document.getElementById('prog_pagamento').value || ''}`,
     `Observação: ${document.getElementById('prog_obs').value || ''}`
-  ].join('\\n');
+  ].join('\n');
 
   const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
   const link = document.createElement('a');
@@ -956,9 +953,7 @@ function gerarTxtProgramacao() {
 }
 window.gerarTxtProgramacao = gerarTxtProgramacao;
 
-window.onload = async () => {
-  await inicializar();
-};
+inicializar();
 </script>
 </body>
 </html>
