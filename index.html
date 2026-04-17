@@ -292,7 +292,6 @@
     </div>
   </div>
 </div>
-
 <div id="programacao" class="section no-print">
   <div class="card">
     <h3>Programação</h3>
@@ -452,7 +451,6 @@
   <button class="nav-item" onclick="tab('programacao', this)">PROGRAMAÇÃO</button>
   <button class="nav-item" onclick="tab('vendedor', this)">PERFIL</button>
 </nav>
-
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import {
@@ -962,8 +960,7 @@ async function listarProgramacoes() {
   }
   atualizarExtratoProgramacao();
 }
-
-function editarProgramacao(i) {
+  function editarProgramacao(i) {
   const p = programacoesCache[i];
   if (!p) return;
   document.getElementById('selProgC').value = p.cliId || '';
@@ -1099,7 +1096,7 @@ function exportarPropostasExcel() {
 
 function baixarCSV(csv, nome) {
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement("a");
+  const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
   link.download = nome;
   link.click();
