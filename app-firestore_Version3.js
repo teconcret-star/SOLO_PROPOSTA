@@ -522,16 +522,15 @@ function imprimir() {
     }
 
     const cli = clientesCache.find(c => c.id === cliId) || {};
-    const vend = {
-      nome: document.getElementById('v_nome').value || '',
-      cel: document.getElementById('v_cel').value || ''
-    };
+    const perfilId = document.getElementById('selV').value;
+    const perfil = perfisCache.find(p => p.id === perfilId) || {};
 
     document.getElementById('p_cidade').innerText = document.getElementById('filial').value;
     document.getElementById('p_data').innerText = new Date().toLocaleDateString('pt-BR');
     document.getElementById('p_cliente').innerText = (cli.nome || '').toUpperCase();
     document.getElementById('p_cnpj').innerText = cli.doc || '';
     document.getElementById('p_tel').innerText = cli.tel || '';
+    document.getElementById('p_perf_resp').innerText = perfil.nome || '';
     document.getElementById('p_obra').innerText = `${cli.end || ''}, ${cli.num || ''} ${cli.comp ? '- ' + cli.comp : ''}`.toUpperCase();
     document.getElementById('p_responsavel').innerText = document.getElementById('contato_obra').value || "RESPONSÁVEL";
 
@@ -560,8 +559,8 @@ function imprimir() {
     document.getElementById('pr_roc').innerText = document.getElementById('cfg_roc').value;
     document.getElementById('pr_prazo').innerText = document.getElementById('cfg_prazo').value;
     document.getElementById('p_obs').innerText = document.getElementById('obs').value || "A COMBINAR";
-    document.getElementById('p_vend').innerText = (vend.nome || '').toUpperCase();
-    document.getElementById('p_v_cel').innerText = vend.cel || '';
+    document.getElementById('p_vend').innerText = (perfil.nome || '').toUpperCase();
+    document.getElementById('p_v_cel').innerText = perfil.cel || '';
 
     setTimeout(() => window.print(), 100);
   } catch (e) {
