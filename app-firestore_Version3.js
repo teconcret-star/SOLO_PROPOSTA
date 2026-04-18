@@ -71,7 +71,7 @@ function filialParaRegistro() {
 
 // ─── Login / Logout ───────────────────────────────────────────────────────────
 async function fazerLogin() {
-  const username = (document.getElementById('login_usuario')?.value || '').trim();
+  const username = (document.getElementById('login_usuario')?.value || '').trim().toLowerCase();
   const senha    = (document.getElementById('login_senha')?.value || '').trim();
   const erroEl   = document.getElementById('login-erro');
   if (erroEl) erroEl.textContent = '';
@@ -187,7 +187,7 @@ function fecharModalSenha() {
 }
 
 async function trocarSenha() {
-  const usuario    = (document.getElementById('ms_usuario')?.value || '').trim();
+  const usuario    = (document.getElementById('ms_usuario')?.value || '').trim().toLowerCase();
   const senhaAtual = (document.getElementById('ms_senha_atual')?.value || '').trim();
   const senhaNova  = (document.getElementById('ms_senha_nova')?.value || '').trim();
   const senhaConf  = (document.getElementById('ms_senha_conf')?.value || '').trim();
@@ -380,7 +380,7 @@ async function salvarC() {
     comp:      document.getElementById('comp')?.value   || '',
     cep:       document.getElementById('cep')?.value    || '',
     criadoPor: currentUser.username,
-    filial:    isAdmin() ? (currentUser.filial === 'Todas' ? 'Divinopolis' : currentUser.filial) : currentUser.filial
+    filial:    (isAdmin() && currentUser.filial === 'Todas') ? 'Divinopolis' : currentUser.filial
   };
 
   try {
