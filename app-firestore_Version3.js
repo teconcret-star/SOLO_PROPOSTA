@@ -565,6 +565,7 @@ function addLinha() {
     volume,
     fck:   document.getElementById('fck')?.value   || '',
     brita: document.getElementById('brita')?.value || '',
+    slump: document.getElementById('slump')?.value || '120±20',
     preco: base * (1 + margem / 100)
   });
   renderItens();
@@ -579,6 +580,7 @@ function renderItens() {
       <td>${esc(it.volume)}</td>
       <td>${esc(it.fck)}</td>
       <td>${esc(it.brita)}</td>
+      <td>${esc(it.slump || '120±20')}</td>
       <td>R$ ${esc(Number(it.preco).toFixed(2))}</td>
       <td onclick="removerItem(${i})" style="cursor:pointer">❌</td>
     </tr>`;
@@ -974,7 +976,7 @@ function imprimir() {
         <td>${esc(it.volume)}</td>
         <td>${esc(it.fck)}</td>
         <td>${esc(it.brita)}</td>
-        <td>120±20</td>
+        <td>${esc(it.slump || '120±20')}</td>
         <td>R$ ${esc(Number(it.preco).toFixed(2))}</td>
       </tr>`;
     });
