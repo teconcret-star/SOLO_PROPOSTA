@@ -44,6 +44,11 @@ const ADMIN_SENHA_KEY = 'solomix_admin_senha';
 const DEFAULT_ADMIN_SENHA = 'password2026';
 const SESSION_KEY = 'solomix_user';
 
+// ─── HTML escaping to prevent XSS ────────────────────────────────────────────
+function esc(s) {
+  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 // ─── Role helpers ─────────────────────────────────────────────────────────────
 function isAdmin()    { return currentUser?.role === 'administrador'; }
 function isGerente()  { return currentUser?.role === 'gerente'; }
@@ -190,7 +195,7 @@ async function trocarSenha() {
 
   if (!usuario || !senhaAtual || !senhaNova) { msg.textContent = 'Preencha todos os campos.'; return; }
   if (senhaNova !== senhaConf) { msg.textContent = 'As senhas não coincidem.'; return; }
-  if (senhaNova.length < 4)   { msg.textContent = 'Senha muito curta (mín. 4 caracteres).'; return; }
+  if (senhaNova.length < 8)   { msg.textContent = 'Senha muito curta (mín. 8 caracteres).'; return; }
 
   if (usuario === ADMIN_USER) {
     const adminSenha = localStorage.getItem(ADMIN_SENHA_KEY) || DEFAULT_ADMIN_SENHA;
@@ -224,7 +229,7 @@ async function trocarSenhaPerfil() {
 
   if (!senhaAtual || !senhaNova) { alert('Preencha todos os campos.'); return; }
   if (senhaNova !== senhaConf)   { alert('As senhas não coincidem.'); return; }
-  if (senhaNova.length < 4)     { alert('Senha muito curta (mín. 4 caracteres).'); return; }
+  if (senhaNova.length < 8)     { alert('Senha muito curta (mín. 8 caracteres).'); return; }
 
   if (currentUser.username === ADMIN_USER) {
     const adminSenha = localStorage.getItem(ADMIN_SENHA_KEY) || DEFAULT_ADMIN_SENHA;
@@ -542,10 +547,10 @@ function renderItens() {
   t.innerHTML = '';
   itensProposta.forEach((it, i) => {
     t.innerHTML += `<tr>
-      <td>${it.volume}</td>
-      <td>${it.fck}</td>
-      <td>${it.brita}</td>
-      <td>R$ ${Number(it.preco).toFixed(2)}</td>
+      <td>${esc(it.volume)}</td>
+      <td>${esc(it.fck)}</td>
+      <td>${esc(it.brita)}</td>
+      <td>R$ ${esc(Number(it.preco).toFixed(2))}</td>
       <td onclick="removerItem(${i})" style="cursor:pointer">❌</td>
     </tr>`;
   });
@@ -694,7 +699,7 @@ async function excluirP(id) {
 
 // ─── Programação ──────────────────────────────────────────────────────────────
 async function salvarProgramacao() {
-  const filialVal = isAdmin() ? currentUser.filial : currentUser.filial;
+  const filialVal = currentUser.filial;
 
   const obj = {
     data:         new Date().toLocaleDateString('pt-BR'),
@@ -937,11 +942,11 @@ function imprimir() {
     tb.innerHTML = '';
     itensProposta.forEach(it => {
       tb.innerHTML += `<tr>
-        <td>${it.volume}</td>
-        <td>${it.fck}</td>
-        <td>${it.brita}</td>
+        <td>${esc(it.volume)}</td>
+        <td>${esc(it.fck)}</td>
+        <td>${esc(it.brita)}</td>
         <td>120±20</td>
-        <td>R$ ${Number(it.preco).toFixed(2)}</td>
+        <td>R$ ${esc(Number(it.preco).toFixed(2))}</td>
       </tr>`;
     });
 
