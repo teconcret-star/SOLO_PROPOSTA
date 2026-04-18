@@ -10,9 +10,11 @@ import {
   getDoc,
   setDoc,
   query,
-  orderBy
+  orderBy,
+  where
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
+// ─── Firebase ────────────────────────────────────────────────────────────────
 const firebaseConfig = {
   apiKey: "AIzaSyC8IRsEWgUZEY6AwdOWE8ZCVPorPuObdFA",
   authDomain: "solomix-56b7b.firebaseapp.com",
@@ -22,15 +24,241 @@ const firebaseConfig = {
   appId: "1:851808503220:web:f1d632e4405331385d1ee1",
   measurementId: "G-8PVVFM0KRX"
 };
-
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+// ─── Session ──────────────────────────────────────────────────────────────────
+let currentUser = null; // { username, role, filial, nome }
+
+// ─── In-memory caches ─────────────────────────────────────────────────────────
+let itensProposta = [];
 let clientesCache = [];
 let perfisCache = [];
 let propostasCache = [];
 let programacoesCache = [];
+let usuariosCache = [];
 
+// ─── Constants ────────────────────────────────────────────────────────────────
+const ADMIN_USER = 'admin';
+const ADMIN_SENHA_KEY = 'solomix_admin_senha';
+const DEFAULT_ADMIN_SENHA = 'password2026';
+const SESSION_KEY = 'solomix_user';
+
+// ─── Role helpers ─────────────────────────────────────────────────────────────
+function isAdmin()    { return currentUser?.role === 'administrador'; }
+function isGerente()  { return currentUser?.role === 'gerente'; }
+function isConsultor(){ return currentUser?.role === 'consultor_comercial'; }
+function podeGerenciarUsuarios() { return isAdmin() || isGerente(); }
+
+function aplicarFiltroRole(lista) {
+  if (!currentUser || isAdmin()) return lista;
+  if (isGerente()) {
+    return lista.filter(r => !r.filial || r.filial === currentUser.filial);
+  }
+  // consultor_comercial: only own records (or legacy records with no criadoPor)
+  return lista.filter(r => !r.criadoPor || r.criadoPor === currentUser.username);
+}
+
+function filialParaRegistro() {
+  // For admin using a proposal form the filial field is editable
+  return currentUser?.filial || 'Divinopolis';
+}
+
+// ─── Login / Logout ───────────────────────────────────────────────────────────
+async function fazerLogin() {
+  const username = (document.getElementById('login_usuario')?.value || '').trim();
+  const senha    = (document.getElementById('login_senha')?.value || '').trim();
+  const erroEl   = document.getElementById('login-erro');
+  if (erroEl) erroEl.textContent = '';
+
+  if (!username || !senha) {
+    if (erroEl) erroEl.textContent = 'Informe usuário e senha.';
+    return;
+  }
+
+  // Bootstrap admin (local)
+  if (username === ADMIN_USER) {
+    const adminSenha = localStorage.getItem(ADMIN_SENHA_KEY) || DEFAULT_ADMIN_SENHA;
+    if (senha === adminSenha) {
+      currentUser = { username: ADMIN_USER, role: 'administrador', filial: 'Todas', nome: 'Administrador' };
+      iniciarSessao();
+      return;
+    }
+    if (erroEl) erroEl.textContent = 'Usuário ou senha incorretos.';
+    return;
+  }
+
+  // Firestore users
+  try {
+    const snap = await getDocs(query(collection(db, 'usuarios'), where('username', '==', username)));
+    if (snap.empty) {
+      if (erroEl) erroEl.textContent = 'Usuário ou senha incorretos.';
+      return;
+    }
+    const userData = snap.docs[0].data();
+    if (userData.senha !== senha) {
+      if (erroEl) erroEl.textContent = 'Usuário ou senha incorretos.';
+      return;
+    }
+    currentUser = {
+      id: snap.docs[0].id,
+      username: userData.username,
+      role: userData.role || 'consultor_comercial',
+      filial: userData.filial || 'Divinopolis',
+      nome: userData.nome || username
+    };
+    iniciarSessao();
+  } catch (e) {
+    console.error(e);
+    if (erroEl) erroEl.textContent = 'Erro ao conectar. Verifique a conexão.';
+  }
+}
+
+function iniciarSessao() {
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify(currentUser));
+  document.getElementById('tela-login').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  configurarUI();
+  inicializar();
+}
+
+function fazerLogout() {
+  sessionStorage.removeItem(SESSION_KEY);
+  currentUser = null;
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('tela-login').style.display = 'flex';
+  const erroEl = document.getElementById('login-erro');
+  if (erroEl) erroEl.textContent = '';
+  document.getElementById('login_usuario').value = '';
+  document.getElementById('login_senha').value = '';
+}
+
+function configurarUI() {
+  document.getElementById('header-nome').textContent   = currentUser.nome;
+  document.getElementById('header-role').textContent   = labelRole(currentUser.role);
+  document.getElementById('header-filial').textContent = currentUser.filial;
+
+  const navU = document.getElementById('nav-usuarios');
+  if (navU) navU.style.display = podeGerenciarUsuarios() ? '' : 'none';
+
+  // For gerente/consultor, lock filial fields to their own filial
+  const filialSelProposta = document.getElementById('filial');
+  if (filialSelProposta && !isAdmin()) {
+    filialSelProposta.value = currentUser.filial;
+    filialSelProposta.disabled = true;
+  }
+
+  // In user form: admin sees all roles; gerente sees only gerente/consultor
+  const uRole = document.getElementById('u_role');
+  if (uRole) {
+    if (!isAdmin()) {
+      // Remove administrador option for gerente
+      Array.from(uRole.options).forEach(opt => {
+        if (opt.value === 'administrador') opt.remove();
+      });
+    }
+  }
+  // In user form: gerente can only set their own filial
+  const uFilial = document.getElementById('u_filial');
+  if (uFilial && isGerente()) {
+    uFilial.value = currentUser.filial;
+    uFilial.disabled = true;
+  }
+}
+
+function labelRole(role) {
+  const map = { administrador: 'Administrador', gerente: 'Gerente', consultor_comercial: 'Consultor Comercial' };
+  return map[role] || role;
+}
+
+// ─── Password change (login screen modal) ─────────────────────────────────────
+function abrirModalSenha() {
+  const m = document.getElementById('modal-senha');
+  if (m) { m.classList.add('aberto'); document.getElementById('senha-msg').textContent = ''; }
+}
+function fecharModalSenha() {
+  const m = document.getElementById('modal-senha');
+  if (m) m.classList.remove('aberto');
+}
+
+async function trocarSenha() {
+  const usuario    = (document.getElementById('ms_usuario')?.value || '').trim();
+  const senhaAtual = (document.getElementById('ms_senha_atual')?.value || '').trim();
+  const senhaNova  = (document.getElementById('ms_senha_nova')?.value || '').trim();
+  const senhaConf  = (document.getElementById('ms_senha_conf')?.value || '').trim();
+  const msg        = document.getElementById('senha-msg');
+
+  if (!usuario || !senhaAtual || !senhaNova) { msg.textContent = 'Preencha todos os campos.'; return; }
+  if (senhaNova !== senhaConf) { msg.textContent = 'As senhas não coincidem.'; return; }
+  if (senhaNova.length < 4)   { msg.textContent = 'Senha muito curta (mín. 4 caracteres).'; return; }
+
+  if (usuario === ADMIN_USER) {
+    const adminSenha = localStorage.getItem(ADMIN_SENHA_KEY) || DEFAULT_ADMIN_SENHA;
+    if (senhaAtual !== adminSenha) { msg.textContent = 'Senha atual incorreta.'; return; }
+    localStorage.setItem(ADMIN_SENHA_KEY, senhaNova);
+    msg.style.color = '#2d6a4f';
+    msg.textContent = 'Senha alterada com sucesso!';
+    setTimeout(fecharModalSenha, 1500);
+    return;
+  }
+
+  try {
+    const snap = await getDocs(query(collection(db, 'usuarios'), where('username', '==', usuario)));
+    if (snap.empty) { msg.textContent = 'Usuário não encontrado.'; return; }
+    const userData = snap.docs[0].data();
+    if (userData.senha !== senhaAtual) { msg.textContent = 'Senha atual incorreta.'; return; }
+    await updateDoc(doc(db, 'usuarios', snap.docs[0].id), { senha: senhaNova });
+    msg.style.color = '#2d6a4f';
+    msg.textContent = 'Senha alterada com sucesso!';
+    setTimeout(fecharModalSenha, 1500);
+  } catch (e) {
+    msg.textContent = 'Erro ao alterar senha: ' + e.message;
+  }
+}
+
+// Password change inside the app (Perfil tab)
+async function trocarSenhaPerfil() {
+  const senhaAtual = (document.getElementById('perfil_senha_atual')?.value || '').trim();
+  const senhaNova  = (document.getElementById('perfil_senha_nova')?.value || '').trim();
+  const senhaConf  = (document.getElementById('perfil_senha_conf')?.value || '').trim();
+
+  if (!senhaAtual || !senhaNova) { alert('Preencha todos os campos.'); return; }
+  if (senhaNova !== senhaConf)   { alert('As senhas não coincidem.'); return; }
+  if (senhaNova.length < 4)     { alert('Senha muito curta (mín. 4 caracteres).'); return; }
+
+  if (currentUser.username === ADMIN_USER) {
+    const adminSenha = localStorage.getItem(ADMIN_SENHA_KEY) || DEFAULT_ADMIN_SENHA;
+    if (senhaAtual !== adminSenha) { alert('Senha atual incorreta.'); return; }
+    localStorage.setItem(ADMIN_SENHA_KEY, senhaNova);
+    alert('Senha alterada com sucesso!');
+    document.getElementById('perfil_senha_atual').value = '';
+    document.getElementById('perfil_senha_nova').value  = '';
+    document.getElementById('perfil_senha_conf').value  = '';
+    return;
+  }
+
+  if (!currentUser.id) { alert('Não foi possível identificar o usuário atual.'); return; }
+  try {
+    await updateDoc(doc(db, 'usuarios', currentUser.id), { senha: senhaNova });
+    alert('Senha alterada com sucesso!');
+    document.getElementById('perfil_senha_atual').value = '';
+    document.getElementById('perfil_senha_nova').value  = '';
+    document.getElementById('perfil_senha_conf').value  = '';
+  } catch (e) {
+    alert('Erro ao alterar senha: ' + e.message);
+  }
+}
+
+// ─── Navigation ───────────────────────────────────────────────────────────────
+function tab(id, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const sec = document.getElementById(id);
+  if (sec) sec.classList.add('active');
+  if (btn) btn.classList.add('active');
+}
+
+// ─── Masks ────────────────────────────────────────────────────────────────────
 function mascaraTel(i) {
   let v = i.value.replace(/\D/g, "");
   if (v.length <= 10) v = v.replace(/^(\d{2})(\d{4})(\d{0,4}).*/, "($1) $2-$3");
@@ -38,13 +266,144 @@ function mascaraTel(i) {
   i.value = v;
 }
 
+function mascaraDoc(i) {
+  let v = i.value.replace(/\D/g, "");
+  if (v.length <= 11) {
+    v = v.replace(/(\d{3})(\d)/, "$1.$2");
+    v = v.replace(/(\d{3})(\d)/, "$1.$2");
+    v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+  } else {
+    v = v.replace(/^(\d{2})(\d)/, "$1.$2");
+    v = v.replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3");
+    v = v.replace(/\.(\d{3})(\d)/, ".$1/$2");
+    v = v.replace(/(\d{4})(\d{1,2})$/, "$1-$2");
+  }
+  i.value = v;
+}
+
+function mascaraCEP(i) {
+  let v = i.value.replace(/\D/g, "").slice(0, 8);
+  v = v.replace(/(\d{5})(\d)/, "$1-$2");
+  i.value = v;
+}
+
+async function autoCEP(v) {
+  const cep = (v || '').replace(/\D/g, "");
+  if (cep.length === 8) {
+    try {
+      const r = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+      const d = await r.json();
+      if (!d.erro) {
+        const endEl = document.getElementById('end');
+        if (endEl) endEl.value = `${d.logradouro || ''}${d.bairro ? ', ' + d.bairro : ''}`;
+      }
+    } catch (e) { console.error(e); }
+  }
+}
+
+// ─── Clientes ─────────────────────────────────────────────────────────────────
 async function carregarClientesCache() {
   const snap = await getDocs(query(collection(db, "clientes"), orderBy("data", "desc")));
-  clientesCache = [];
-  snap.forEach(d => clientesCache.push({ id: d.id, ...d.data() }));
+  const todos = [];
+  snap.forEach(d => todos.push({ id: d.id, ...d.data() }));
+  clientesCache = aplicarFiltroRole(todos);
   return clientesCache;
 }
 
+async function atualizarC() {
+  const s  = document.getElementById('selC');
+  const sp = document.getElementById('selProgC');
+  const l  = document.getElementById('listaC');
+
+  if (s)  s.innerHTML  = '<option value="">Selecionar Cliente...</option>';
+  if (sp) sp.innerHTML = '<option value="">Selecionar Cliente...</option>';
+  if (l)  l.innerHTML  = '';
+
+  await carregarClientesCache();
+
+  clientesCache.forEach((c, i) => {
+    if (s)  s.innerHTML  += `<option value="${c.id}">${c.nome}</option>`;
+    if (sp) sp.innerHTML += `<option value="${c.id}">${c.nome}</option>`;
+    if (l) {
+      l.innerHTML += `<tr>
+        <td>${c.data || ''}</td>
+        <td>${c.nome || ''}</td>
+        <td class="actions">
+          <span onclick="editarC(${i})" title="Editar">✏️</span>
+          <span onclick="excluirC('${c.id}')" title="Excluir">🗑️</span>
+        </td>
+      </tr>`;
+    }
+  });
+}
+
+function editarC(i) {
+  const c = clientesCache[i];
+  if (!c) return;
+  document.getElementById('nome').value  = c.nome  || '';
+  document.getElementById('doc_c').value = c.doc   || '';
+  document.getElementById('tel_c').value = c.tel   || '';
+  document.getElementById('end').value   = c.end   || '';
+  document.getElementById('num').value   = c.num   || '';
+  document.getElementById('comp').value  = c.comp  || '';
+  document.getElementById('cep').value   = c.cep   || '';
+  document.getElementById('idx_c').value = i;
+  document.getElementById('btn_cli').innerText = "ATUALIZAR";
+}
+
+function limparC() {
+  document.getElementById('idx_c').value = "-1";
+  document.getElementById('btn_cli').innerText = "SALVAR CLIENTE";
+  ['nome','doc_c','tel_c','end','num','comp','cep'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+}
+
+async function salvarC() {
+  const idx  = document.getElementById('idx_c')?.value || "-1";
+  const nome = (document.getElementById('nome')?.value || '').trim();
+  if (!nome) return alert("Informe o nome do cliente!");
+
+  const obj = {
+    data:      new Date().toLocaleDateString('pt-BR'),
+    nome,
+    doc:       document.getElementById('doc_c')?.value  || '',
+    tel:       document.getElementById('tel_c')?.value  || '',
+    end:       document.getElementById('end')?.value    || '',
+    num:       document.getElementById('num')?.value    || '',
+    comp:      document.getElementById('comp')?.value   || '',
+    cep:       document.getElementById('cep')?.value    || '',
+    criadoPor: currentUser.username,
+    filial:    isAdmin() ? (currentUser.filial === 'Todas' ? 'Divinopolis' : currentUser.filial) : currentUser.filial
+  };
+
+  try {
+    if (idx === "-1") {
+      await addDoc(collection(db, "clientes"), obj);
+    } else {
+      const refId = clientesCache[Number(idx)]?.id;
+      if (!refId) return alert("Cliente não encontrado para atualização.");
+      await updateDoc(doc(db, "clientes", refId), obj);
+    }
+    await atualizarC();
+    limparC();
+    alert("Cliente salvo!");
+  } catch (err) {
+    console.error(err);
+    alert("Erro ao salvar cliente: " + err.message);
+  }
+}
+
+async function excluirC(id) {
+  if (!confirm("Excluir cliente?")) return;
+  await deleteDoc(doc(db, "clientes", id));
+  await atualizarC();
+  await listarP();
+  await listarProgramacoes();
+}
+
+// ─── Perfis (Vendedor) ────────────────────────────────────────────────────────
 async function carregarPerfisCache() {
   const snap = await getDocs(query(collection(db, "perfis_vendedor"), orderBy("data", "desc")));
   perfisCache = [];
@@ -83,136 +442,31 @@ function filtrarPerfis() {
         <td>${p.nome || ''}</td>
         <td>${p.cel || ''}</td>
         <td class="actions">
-          <span onclick="editarPerfil(${i})">✏️</span>
-          <span onclick="excluirPerfil('${p.id}')">🗑️</span>
+          <span onclick="editarPerfil(${i})" title="Editar">✏️</span>
+          <span onclick="excluirPerfil('${p.id}')" title="Excluir">🗑️</span>
         </td>
       </tr>`;
     });
 }
 
-async function atualizarC() {
-  const s = document.getElementById('selC');
-  const sp = document.getElementById('selProgC');
-  const l = document.getElementById('listaC');
-
-  if (s) s.innerHTML = '<option value="">Selecionar Cliente...</option>';
-  if (sp) sp.innerHTML = '<option value="">Selecionar Cliente...</option>';
-  if (l) l.innerHTML = '';
-
-  await carregarClientesCache();
-
-  clientesCache.forEach((c, i) => {
-    if (s) s.innerHTML += `<option value="${c.id}">${c.nome}</option>`;
-    if (sp) sp.innerHTML += `<option value="${c.id}">${c.nome}</option>`;
-    if (l) {
-      l.innerHTML += `<tr>
-        <td>${c.data || ''}</td>
-        <td>${c.nome || ''}</td>
-        <td class="actions">
-          <span onclick="editarC(${i})">✏️</span>
-          <span onclick="excluirC('${c.id}')">🗑️</span>
-        </td>
-      </tr>`;
-    }
-  });
-}
-
-function editarC(i) {
-  const c = clientesCache[i];
-  if (!c) return;
-
-  const ids = ['nome', 'doc_c', 'tel_c', 'end', 'num', 'comp', 'cep'];
-  const values = [c.nome || '', c.doc || '', c.tel || '', c.end || '', c.num || '', c.comp || '', c.cep || ''];
-
-  ids.forEach((id, idx) => {
-    const el = document.getElementById(id);
-    if (el) el.value = values[idx];
-  });
-
-  const idxEl = document.getElementById('idx_c');
-  const btn = document.getElementById('btn_cli');
-  if (idxEl) idxEl.value = i;
-  if (btn) btn.innerText = "ATUALIZAR";
-}
-
-function limparC() {
-  const ids = ['idx_c', 'nome', 'doc_c', 'tel_c', 'end', 'num', 'comp', 'cep'];
-  ids.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.value = id === 'idx_c' ? "-1" : "";
-  });
-
-  const btn = document.getElementById('btn_cli');
-  if (btn) btn.innerText = "SALVAR CLIENTE";
-}
-
-async function salvarC() {
-  try {
-    const nome = document.getElementById('nome')?.value?.trim();
-    const docC = document.getElementById('doc_c')?.value || '';
-    const tel = document.getElementById('tel_c')?.value || '';
-    const end = document.getElementById('end')?.value || '';
-    const num = document.getElementById('num')?.value || '';
-    const comp = document.getElementById('comp')?.value || '';
-    const cep = document.getElementById('cep')?.value || '';
-    const idx = document.getElementById('idx_c')?.value || "-1";
-
-    if (!nome) {
-      alert("Informe o nome do cliente!");
-      return;
-    }
-
-    const obj = {
-      data: new Date().toLocaleDateString('pt-BR'),
-      nome,
-      doc: docC,
-      tel,
-      end,
-      num,
-      comp,
-      cep
-    };
-
-    if (idx === "-1") {
-      await addDoc(collection(db, "clientes"), obj);
-    } else {
-      const refId = clientesCache[Number(idx)]?.id;
-      if (!refId) {
-        alert("Cliente não encontrado para atualização.");
-        return;
-      }
-      await updateDoc(doc(db, "clientes", refId), obj);
-    }
-
-    await atualizarC();
-    limparC();
-    alert("Cliente salvo!");
-  } catch (err) {
-    console.error(err);
-    alert("Erro ao salvar cliente: " + err.message);
-  }
-}
-
-async function excluirC(id) {
-  if (!confirm("Excluir cliente?")) return;
-  await deleteDoc(doc(db, "clientes", id));
-  await atualizarC();
-  await listarP();
-  await listarProgramacoes();
-}
-
 function editarPerfil(i) {
   const p = perfisCache[i];
   if (!p) return;
-  document.getElementById('v_nome').value = p.nome || '';
-  document.getElementById('v_cel').value = p.cel || '';
-  document.getElementById('idx_v').value = i;
+  const vn = document.getElementById('v_nome');
+  const vc = document.getElementById('v_cel');
+  const iv = document.getElementById('idx_v');
+  if (vn) vn.value = p.nome || '';
+  if (vc) vc.value = p.cel  || '';
+  if (iv) iv.value = i;
 }
 
 function limparPerfil() {
-  document.getElementById('idx_v').value = '-1';
-  document.getElementById('v_nome').value = '';
-  document.getElementById('v_cel').value = '';
+  const iv = document.getElementById('idx_v');
+  const vn = document.getElementById('v_nome');
+  const vc = document.getElementById('v_cel');
+  if (iv) iv.value = '-1';
+  if (vn) vn.value = '';
+  if (vc) vc.value = '';
 }
 
 async function salvarV() {
@@ -220,7 +474,7 @@ async function salvarV() {
   const obj = {
     data: new Date().toLocaleDateString('pt-BR'),
     nome: document.getElementById('v_nome')?.value || '',
-    cel: document.getElementById('v_cel')?.value || ''
+    cel:  document.getElementById('v_cel')?.value  || ''
   };
 
   if (!obj.nome) return alert("Informe o nome do perfil!");
@@ -246,48 +500,102 @@ async function excluirPerfil(id) {
   filtrarPerfis();
 }
 
+async function carregarVendedor() {
+  const snap = await getDoc(doc(db, "perfil_vendedor", "principal"));
+  if (snap.exists()) {
+    const v = snap.data();
+    const vn = document.getElementById('v_nome');
+    const vc = document.getElementById('v_cel');
+    if (vn) vn.value = v.nome || '';
+    if (vc) vc.value = v.cel  || '';
+  }
+}
+
+// ─── Propostas ────────────────────────────────────────────────────────────────
 function atualizarDadosClienteProposta() {
-  const cliId = document.getElementById('selC').value;
-  const cli = clientesCache.find(c => c.id === cliId) || {};
-  document.getElementById('prop_cnpj').value = cli.doc || '';
-  document.getElementById('prop_tel').value = cli.tel || '';
+  const cliId = document.getElementById('selC')?.value;
+  const cli   = clientesCache.find(c => c.id === cliId) || {};
+  const cn    = document.getElementById('prop_cnpj');
+  const ct    = document.getElementById('prop_tel');
+  if (cn) cn.value = cli.doc || '';
+  if (ct) ct.value = cli.tel || '';
+}
+
+function addLinha() {
+  const volume = parseFloat(document.getElementById('volume')?.value) || 0;
+  const base   = parseFloat(document.getElementById('vBase')?.value)  || 0;
+  const margem = parseFloat(document.getElementById('margem')?.value) || 0;
+  if (volume <= 0) return alert("Insira o volume!");
+  if (base   <= 0) return alert("Insira um valor base!");
+  itensProposta.push({
+    volume,
+    fck:   document.getElementById('fck')?.value   || '',
+    brita: document.getElementById('brita')?.value || '',
+    preco: base * (1 + margem / 100)
+  });
+  renderItens();
+}
+
+function renderItens() {
+  const t = document.getElementById('itensTmp');
+  if (!t) return;
+  t.innerHTML = '';
+  itensProposta.forEach((it, i) => {
+    t.innerHTML += `<tr>
+      <td>${it.volume}</td>
+      <td>${it.fck}</td>
+      <td>${it.brita}</td>
+      <td>R$ ${Number(it.preco).toFixed(2)}</td>
+      <td onclick="removerItem(${i})" style="cursor:pointer">❌</td>
+    </tr>`;
+  });
+}
+
+function removerItem(i) {
+  itensProposta.splice(i, 1);
+  renderItens();
 }
 
 async function salvarP() {
-  const cliente = document.getElementById('selC').value;
-  if (cliente === "") return alert("Selecione um cliente!");
+  const cliente = document.getElementById('selC')?.value || '';
+  if (!cliente) return alert("Selecione um cliente!");
   if (itensProposta.length === 0) return alert("Adicione itens!");
 
-  const perfilId = document.getElementById('selV').value;
-  const perfil = perfisCache.find(p => p.id === perfilId) || {};
+  const perfilId = document.getElementById('selV')?.value || '';
+  const perfil   = perfisCache.find(p => p.id === perfilId) || {};
+
+  const filialVal = isAdmin()
+    ? (document.getElementById('filial')?.value || currentUser.filial)
+    : currentUser.filial;
 
   const obj = {
-    data: new Date().toLocaleDateString('pt-BR'),
-    cliId: cliente,
-    perfilId: perfilId,
+    data:       new Date().toLocaleDateString('pt-BR'),
+    cliId:      cliente,
+    perfilId,
     perfilNome: perfil.nome || '',
-    status: document.getElementById('status').value,
-    itens: [...itensProposta],
-    resp: document.getElementById('contato_obra').value,
-    filial: document.getElementById('filial').value,
-    obs: document.getElementById('obs').value,
+    status:     document.getElementById('status')?.value || 'andamento',
+    itens:      [...itensProposta],
+    resp:       document.getElementById('contato_obra')?.value || '',
+    filial:     filialVal,
+    obs:        document.getElementById('obs')?.value || '',
+    criadoPor:  currentUser.username,
     cfg: {
-      b: document.getElementById('cfg_bomba').value,
-      mb: document.getElementById('cfg_min_b').value,
-      f: document.getElementById('cfg_fibra').value,
-      fal: document.getElementById('cfg_faltante').value,
-      p: document.getElementById('cfg_perm').value,
-      rac: document.getElementById('cfg_rac').value,
-      roc: document.getElementById('cfg_roc').value,
-      prz: document.getElementById('cfg_prazo').value,
-      hu: document.getElementById('cfg_h_uteis').value,
-      hs: document.getElementById('cfg_h_sab').value,
-      hd: document.getElementById('cfg_h_dom').value,
-      md: document.getElementById('cfg_min_dom').value
+      b:   document.getElementById('cfg_bomba')?.value   || '',
+      mb:  document.getElementById('cfg_min_b')?.value   || '',
+      f:   document.getElementById('cfg_fibra')?.value   || '',
+      fal: document.getElementById('cfg_faltante')?.value|| '',
+      p:   document.getElementById('cfg_perm')?.value    || '',
+      rac: document.getElementById('cfg_rac')?.value     || '',
+      roc: document.getElementById('cfg_roc')?.value     || '',
+      prz: document.getElementById('cfg_prazo')?.value   || '',
+      hu:  document.getElementById('cfg_h_uteis')?.value || '',
+      hs:  document.getElementById('cfg_h_sab')?.value   || '',
+      hd:  document.getElementById('cfg_h_dom')?.value   || '',
+      md:  document.getElementById('cfg_min_dom')?.value || ''
     }
   };
 
-  const idx = document.getElementById('idx_p').value;
+  const idx = document.getElementById('idx_p')?.value || "-1";
   if (idx === "-1") {
     await addDoc(collection(db, "propostas"), obj);
   } else {
@@ -300,80 +608,77 @@ async function salvarP() {
   alert("Proposta salva!");
 }
 
+async function listarP() {
+  const dbP = document.getElementById('listaP');
+  if (dbP) dbP.innerHTML = '';
+  const snap = await getDocs(query(collection(db, "propostas"), orderBy("data", "desc")));
+  const todos = [];
+  snap.forEach(d => todos.push({ id: d.id, ...d.data() }));
+  propostasCache = aplicarFiltroRole(todos);
+  filtrarPropostas();
+}
+
 function filtrarPropostas() {
   const filtroCliente = (document.getElementById('filtroPropostaCliente')?.value || '').toLowerCase();
-  const filtroPerfil = document.getElementById('filtroPropostaPerfil')?.value || '';
-  const filtroStatus = document.getElementById('filtroPropostaStatus')?.value || '';
-
+  const filtroPerfil  = document.getElementById('filtroPropostaPerfil')?.value || '';
+  const filtroStatus  = document.getElementById('filtroPropostaStatus')?.value || '';
   const l = document.getElementById('listaP');
   if (!l) return;
 
   l.innerHTML = '';
-
   propostasCache
     .filter(p => {
       const cli = clientesCache.find(c => c.id === p.cliId);
-      const nomeCli = (cli?.nome || '').toLowerCase();
-      const perfilNome = (p.perfilNome || '');
-      const status = p.status || '';
-
+      const nomeCli   = (cli?.nome || '').toLowerCase();
+      const perfilNome = p.perfilNome || '';
+      const status     = p.status    || '';
       return (
         (!filtroCliente || nomeCli.includes(filtroCliente)) &&
-        (!filtroPerfil || perfilNome === filtroPerfil) &&
-        (!filtroStatus || status === filtroStatus)
+        (!filtroPerfil  || perfilNome === filtroPerfil) &&
+        (!filtroStatus  || status === filtroStatus)
       );
     })
     .forEach((p, i) => {
-      const cli = clientesCache.find(c => c.id === p.cliId);
+      const cli     = clientesCache.find(c => c.id === p.cliId);
       const nomeCli = cli ? cli.nome : "Excluído";
-      const perfilNome = p.perfilNome || "—";
       l.innerHTML += `<tr>
         <td>${p.data || ''}</td>
         <td>${nomeCli}</td>
-        <td>${perfilNome}</td>
+        <td>${p.perfilNome || '—'}</td>
         <td><span class="badge bg-${p.status}">${p.status}</span></td>
         <td class="actions">
-          <span onclick="editarP(${i})">✏️</span>
-          <span onclick="excluirP('${p.id}')">🗑️</span>
+          <span onclick="editarP(${i})" title="Editar">✏️</span>
+          <span onclick="excluirP('${p.id}')" title="Excluir">🗑️</span>
         </td>
       </tr>`;
     });
 }
 
-async function listarP() {
-  const dbP = document.getElementById('listaP');
-  dbP.innerHTML = '';
-  const snap = await getDocs(query(collection(db, "propostas"), orderBy("data", "desc")));
-  propostasCache = [];
-  snap.forEach(d => propostasCache.push({ id: d.id, ...d.data() }));
-  filtrarPropostas();
-}
-
 function editarP(i) {
   const p = propostasCache[i];
   if (!p) return;
-  document.getElementById('selC').value = p.cliId || '';
-  document.getElementById('selV').value = p.perfilId || '';
-  document.getElementById('status').value = p.status || 'andamento';
-  document.getElementById('contato_obra').value = p.resp || '';
-  document.getElementById('filial').value = p.filial || 'Divinopolis';
-  document.getElementById('obs').value = p.obs || '';
+  document.getElementById('selC').value            = p.cliId  || '';
+  document.getElementById('selV').value            = p.perfilId || '';
+  document.getElementById('status').value          = p.status || 'andamento';
+  document.getElementById('contato_obra').value    = p.resp   || '';
+  if (isAdmin()) document.getElementById('filial').value = p.filial || 'Divinopolis';
+  document.getElementById('obs').value             = p.obs    || '';
   itensProposta = [...(p.itens || [])];
   renderItens();
 
   if (p.cfg) {
-    document.getElementById('cfg_bomba').value = p.cfg.b || '';
-    document.getElementById('cfg_min_b').value = p.cfg.mb || '';
-    document.getElementById('cfg_fibra').value = p.cfg.f || '';
-    document.getElementById('cfg_faltante').value = p.cfg.fal || '';
-    document.getElementById('cfg_perm').value = p.cfg.p || '';
-    document.getElementById('cfg_rac').value = p.cfg.rac || '';
-    document.getElementById('cfg_roc').value = p.cfg.roc || '';
-    document.getElementById('cfg_prazo').value = p.cfg.prz || '';
-    document.getElementById('cfg_h_uteis').value = p.cfg.hu || '';
-    document.getElementById('cfg_h_sab').value = p.cfg.hs || '';
-    document.getElementById('cfg_h_dom').value = p.cfg.hd || '';
-    document.getElementById('cfg_min_dom').value = p.cfg.md || '';
+    document.getElementById('cfg_bomba').value   = p.cfg.b   || '';
+    document.getElementById('cfg_min_b').value   = p.cfg.mb  || '';
+    document.getElementById('cfg_fibra').value   = p.cfg.f   || '';
+    document.getElementById('cfg_faltante').value= p.cfg.fal || '';
+    document.getElementById('cfg_perm').value    = p.cfg.p   || '';
+    document.getElementById('cfg_rac').value     = p.cfg.rac || '';
+    document.getElementById('cfg_roc').value     = p.cfg.roc || '';
+    document.getElementById('cfg_prazo').value   = p.cfg.prz || '';
+    document.getElementById('cfg_h_uteis').value = p.cfg.hu  || '';
+    document.getElementById('cfg_h_sab').value   = p.cfg.hs  || '';
+    document.getElementById('cfg_h_dom').value   = p.cfg.hd  || '';
+    document.getElementById('cfg_min_dom').value = p.cfg.md  || '';
   }
 
   document.getElementById('idx_p').value = i;
@@ -387,39 +692,33 @@ async function excluirP(id) {
   }
 }
 
-async function carregarVendedor() {
-  const snap = await getDoc(doc(db, "perfil_vendedor", "principal"));
-  if (snap.exists()) {
-    const v = snap.data();
-    const nome = document.getElementById('v_nome');
-    const cel = document.getElementById('v_cel');
-    if (nome) nome.value = v.nome || '';
-    if (cel) cel.value = v.cel || '';
-  }
-}
-
+// ─── Programação ──────────────────────────────────────────────────────────────
 async function salvarProgramacao() {
+  const filialVal = isAdmin() ? currentUser.filial : currentUser.filial;
+
   const obj = {
-    data: new Date().toLocaleDateString('pt-BR'),
-    cliId: document.getElementById('selProgC').value,
-    obra_nome: document.getElementById('prog_obra_nome').value,
-    contrato: document.getElementById('prog_contrato').value,
-    solicitante: document.getElementById('prog_solicitante').value,
-    cno: document.getElementById('prog_cno').value,
-    email: document.getElementById('prog_email').value,
-    contato_obra: document.getElementById('prog_contato_obra').value,
-    volume: document.getElementById('prog_volume').value,
-    fck: document.getElementById('prog_fck').value,
-    slp: document.getElementById('prog_slp').value,
-    brita: document.getElementById('prog_brita').value,
-    preco: document.getElementById('prog_preco').value,
-    bomba: document.getElementById('prog_bomba').value,
-    pagamento: document.getElementById('prog_pagamento').value,
-    end_obra: document.getElementById('prog_end_obra').value,
-    obs: document.getElementById('prog_obs').value
+    data:         new Date().toLocaleDateString('pt-BR'),
+    cliId:        document.getElementById('selProgC')?.value         || '',
+    obra_nome:    document.getElementById('prog_obra_nome')?.value   || '',
+    contrato:     document.getElementById('prog_contrato')?.value    || '',
+    solicitante:  document.getElementById('prog_solicitante')?.value || '',
+    cno:          document.getElementById('prog_cno')?.value         || '',
+    email:        document.getElementById('prog_email')?.value       || '',
+    contato_obra: document.getElementById('prog_contato_obra')?.value|| '',
+    volume:       document.getElementById('prog_volume')?.value      || '',
+    fck:          document.getElementById('prog_fck')?.value         || '',
+    slp:          document.getElementById('prog_slp')?.value         || '',
+    brita:        document.getElementById('prog_brita')?.value       || '',
+    preco:        document.getElementById('prog_preco')?.value       || '',
+    bomba:        document.getElementById('prog_bomba')?.value       || '',
+    pagamento:    document.getElementById('prog_pagamento')?.value   || '',
+    end_obra:     document.getElementById('prog_end_obra')?.value    || '',
+    obs:          document.getElementById('prog_obs')?.value         || '',
+    criadoPor:    currentUser.username,
+    filial:       filialVal
   };
 
-  const idx = document.getElementById('idx_prog').value;
+  const idx = document.getElementById('idx_prog')?.value || "-1";
   if (idx === "-1") {
     await addDoc(collection(db, "programacoes"), obj);
   } else {
@@ -434,22 +733,23 @@ async function salvarProgramacao() {
 
 async function listarProgramacoes() {
   const l = document.getElementById('listaProg');
-  l.innerHTML = '';
+  if (l) l.innerHTML = '';
   const snap = await getDocs(query(collection(db, "programacoes"), orderBy("data", "desc")));
-  programacoesCache = [];
-  snap.forEach(d => programacoesCache.push({ id: d.id, ...d.data() }));
+  const todos = [];
+  snap.forEach(d => todos.push({ id: d.id, ...d.data() }));
+  programacoesCache = aplicarFiltroRole(todos);
 
   for (let i = 0; i < programacoesCache.length; i++) {
     const p = programacoesCache[i];
     const cli = clientesCache.find(c => c.id === p.cliId);
     const nomeCli = cli ? cli.nome : "Excluído";
-    l.innerHTML += `<tr>
+    if (l) l.innerHTML += `<tr>
       <td>${p.data || ''}</td>
       <td>${nomeCli}</td>
       <td>${p.obra_nome || ''}</td>
       <td class="actions">
-        <span onclick="editarProgramacao(${i})">✏️</span>
-        <span onclick="excluirProgramacao('${p.id}')">🗑️</span>
+        <span onclick="editarProgramacao(${i})" title="Editar">✏️</span>
+        <span onclick="excluirProgramacao('${p.id}')" title="Excluir">🗑️</span>
       </td>
     </tr>`;
   }
@@ -459,23 +759,25 @@ async function listarProgramacoes() {
 function editarProgramacao(i) {
   const p = programacoesCache[i];
   if (!p) return;
-  document.getElementById('selProgC').value = p.cliId || '';
-  document.getElementById('prog_obra_nome').value = p.obra_nome || '';
-  document.getElementById('prog_contrato').value = p.contrato || '';
-  document.getElementById('prog_solicitante').value = p.solicitante || '';
-  document.getElementById('prog_cno').value = p.cno || '';
-  document.getElementById('prog_email').value = p.email || '';
-  document.getElementById('prog_contato_obra').value = p.contato_obra || '';
-  document.getElementById('prog_volume').value = p.volume || '';
-  document.getElementById('prog_fck').value = p.fck || '';
-  document.getElementById('prog_slp').value = p.slp || '';
-  document.getElementById('prog_brita').value = p.brita || '';
-  document.getElementById('prog_preco').value = p.preco || '';
-  document.getElementById('prog_bomba').value = p.bomba || '';
-  document.getElementById('prog_pagamento').value = p.pagamento || '';
-  document.getElementById('prog_end_obra').value = p.end_obra || '';
-  document.getElementById('prog_obs').value = p.obs || '';
-  document.getElementById('idx_prog').value = i;
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+  set('selProgC',          p.cliId          || '');
+  set('prog_obra_nome',    p.obra_nome       || '');
+  set('prog_contrato',     p.contrato        || '');
+  set('prog_solicitante',  p.solicitante     || '');
+  set('prog_cno',          p.cno             || '');
+  set('prog_email',        p.email           || '');
+  set('prog_contato_obra', p.contato_obra    || '');
+  set('prog_volume',       p.volume          || '');
+  set('prog_fck',          p.fck             || '');
+  set('prog_slp',          p.slp             || '');
+  set('prog_brita',        p.brita           || '');
+  set('prog_preco',        p.preco           || '');
+  set('prog_bomba',        p.bomba           || '');
+  set('prog_pagamento',    p.pagamento       || '');
+  set('prog_end_obra',     p.end_obra        || '');
+  set('prog_obs',          p.obs             || '');
+  set('idx_prog',          i);
+  atualizarExtratoProgramacao();
 }
 
 async function excluirProgramacao(id) {
@@ -485,55 +787,151 @@ async function excluirProgramacao(id) {
   }
 }
 
-async function carregarClienteProgramacao(id) {
+async function carregarClienteProgramacao() {
   atualizarExtratoProgramacao();
 }
 
 function atualizarExtratoProgramacao() {
-  const cliId = document.getElementById('selProgC').value;
-  const cli = clientesCache.find(c => c.id === cliId) || {};
+  const cliId = document.getElementById('selProgC')?.value || '';
+  const cli   = clientesCache.find(c => c.id === cliId) || {};
+  const get   = id => document.getElementById(id)?.value || '';
+  const set   = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
 
-  document.getElementById('pp_obra_nome').innerText = document.getElementById('prog_obra_nome').value || '';
-  document.getElementById('pp_contrato').innerText = document.getElementById('prog_contrato').value || '';
-  document.getElementById('pp_cliente').innerText = cli.nome || '';
-  document.getElementById('pp_cnpj').innerText = cli.doc || '';
-  document.getElementById('pp_end_cliente').innerText = `${cli.end || ''}${cli.num ? ', ' + cli.num : ''}${cli.comp ? ' - ' + cli.comp : ''}`;
-  document.getElementById('pp_cno').innerText = document.getElementById('prog_cno').value || '';
-  document.getElementById('pp_email').innerText = document.getElementById('prog_email').value || '';
-  document.getElementById('pp_contato_obra').innerText = document.getElementById('prog_contato_obra').value || '';
-  document.getElementById('pp_solicitante').innerText = document.getElementById('prog_solicitante').value || '';
-  document.getElementById('pp_end_obra').innerText = document.getElementById('prog_end_obra').value || '';
-  document.getElementById('pp_fck').innerText = document.getElementById('prog_fck').value || '';
-  document.getElementById('pp_slp').innerText = document.getElementById('prog_slp').value || '';
-  document.getElementById('pp_brita').innerText = document.getElementById('prog_brita').value || '';
-  document.getElementById('pp_preco').innerText = document.getElementById('prog_preco').value || '';
-  document.getElementById('pp_bomba').innerText = document.getElementById('prog_bomba').value || '';
-  document.getElementById('pp_volume').innerText = document.getElementById('prog_volume').value || '';
-  document.getElementById('pp_pagamento').innerText = document.getElementById('prog_pagamento').value || '';
-  document.getElementById('pp_obs').innerText = document.getElementById('prog_obs').value || '';
+  set('pp_obra_nome',   get('prog_obra_nome'));
+  set('pp_contrato',    get('prog_contrato'));
+  set('pp_cliente',     cli.nome || '');
+  set('pp_cnpj',        cli.doc  || '');
+  set('pp_end_cliente', `${cli.end || ''}${cli.num ? ', ' + cli.num : ''}${cli.comp ? ' - ' + cli.comp : ''}`);
+  set('pp_cno',         get('prog_cno'));
+  set('pp_email',       get('prog_email'));
+  set('pp_contato_obra',get('prog_contato_obra'));
+  set('pp_solicitante', get('prog_solicitante'));
+  set('pp_end_obra',    get('prog_end_obra'));
+  set('pp_fck',         get('prog_fck'));
+  set('pp_slp',         get('prog_slp'));
+  set('pp_brita',       get('prog_brita'));
+  set('pp_preco',       get('prog_preco'));
+  set('pp_bomba',       get('prog_bomba'));
+  set('pp_volume',      get('prog_volume'));
+  set('pp_pagamento',   get('prog_pagamento'));
+  set('pp_obs',         get('prog_obs'));
 }
 
+// ─── Usuários ─────────────────────────────────────────────────────────────────
+async function carregarUsuarios() {
+  if (!podeGerenciarUsuarios()) return;
+  const snap = await getDocs(query(collection(db, "usuarios"), orderBy("nome", "asc")));
+  const todos = [];
+  snap.forEach(d => todos.push({ id: d.id, ...d.data() }));
+
+  // Gerente vê só usuários da sua filial
+  usuariosCache = isAdmin() ? todos : todos.filter(u => u.filial === currentUser.filial);
+
+  const l = document.getElementById('listaU');
+  if (!l) return;
+  l.innerHTML = '';
+  usuariosCache.forEach((u, i) => {
+    const roleClass = `role-${u.role || 'consultor_comercial'}`;
+    l.innerHTML += `<tr>
+      <td>${u.nome || ''}</td>
+      <td>${u.username || ''}</td>
+      <td><span class="role-badge ${roleClass}">${labelRole(u.role)}</span></td>
+      <td>${u.filial || ''}</td>
+      <td class="actions">
+        <span onclick="editarUsuario(${i})" title="Editar">✏️</span>
+        <span onclick="excluirUsuario('${u.id}')" title="Excluir">🗑️</span>
+      </td>
+    </tr>`;
+  });
+}
+
+function editarUsuario(i) {
+  const u = usuariosCache[i];
+  if (!u) return;
+  document.getElementById('u_nome').value     = u.nome     || '';
+  document.getElementById('u_username').value = u.username || '';
+  document.getElementById('u_senha').value    = '';
+  document.getElementById('u_role').value     = u.role     || 'consultor_comercial';
+  if (isAdmin()) document.getElementById('u_filial').value = u.filial || 'Divinopolis';
+  document.getElementById('idx_u').value = i;
+  document.getElementById('btn_usuario').innerText = 'ATUALIZAR USUÁRIO';
+}
+
+function limparUsuario() {
+  document.getElementById('idx_u').value      = '-1';
+  document.getElementById('u_nome').value     = '';
+  document.getElementById('u_username').value = '';
+  document.getElementById('u_senha').value    = '';
+  document.getElementById('u_role').value     = 'consultor_comercial';
+  document.getElementById('btn_usuario').innerText = 'SALVAR USUÁRIO';
+}
+
+async function salvarUsuario() {
+  if (!podeGerenciarUsuarios()) return alert("Sem permissão.");
+
+  const idx      = document.getElementById('idx_u')?.value || '-1';
+  const nome     = (document.getElementById('u_nome')?.value || '').trim();
+  const username = (document.getElementById('u_username')?.value || '').trim().toLowerCase();
+  const senha    = (document.getElementById('u_senha')?.value || '').trim();
+  const role     = document.getElementById('u_role')?.value || 'consultor_comercial';
+  const filial   = isAdmin()
+    ? (document.getElementById('u_filial')?.value || currentUser.filial)
+    : currentUser.filial;
+
+  if (!nome || !username) return alert("Informe nome e usuário.");
+  if (idx === '-1' && !senha) return alert("Informe a senha para o novo usuário.");
+  if (username === ADMIN_USER) return alert("Nome de usuário reservado.");
+
+  // Validate admin-only restriction
+  if (!isAdmin() && role === 'administrador') return alert("Sem permissão para criar administradores.");
+
+  const obj = { nome, username, role, filial };
+  if (senha) obj.senha = senha;
+
+  if (idx === '-1') {
+    // Check uniqueness
+    const exists = await getDocs(query(collection(db, 'usuarios'), where('username', '==', username)));
+    if (!exists.empty) return alert("Este usuário já existe.");
+    await addDoc(collection(db, "usuarios"), obj);
+  } else {
+    const refId = usuariosCache[Number(idx)]?.id;
+    if (!refId) return alert("Usuário não encontrado para atualização.");
+    await updateDoc(doc(db, "usuarios", refId), obj);
+  }
+
+  await carregarUsuarios();
+  limparUsuario();
+  alert("Usuário salvo!");
+}
+
+async function excluirUsuario(id) {
+  if (!podeGerenciarUsuarios()) return;
+  if (confirm("Excluir usuário?")) {
+    await deleteDoc(doc(db, "usuarios", id));
+    await carregarUsuarios();
+  }
+}
+
+// ─── Print / Export ───────────────────────────────────────────────────────────
 function imprimir() {
   try {
-    const cliId = document.getElementById('selC').value;
-    if (cliId === "" || itensProposta.length === 0) {
+    const cliId = document.getElementById('selC')?.value || '';
+    if (!cliId || itensProposta.length === 0) {
       alert("Selecione o cliente e adicione itens!");
       return;
     }
 
-    const cli = clientesCache.find(c => c.id === cliId) || {};
-    const vend = {
-      nome: document.getElementById('v_nome').value || '',
-      cel: document.getElementById('v_cel').value || ''
-    };
+    const cli  = clientesCache.find(c => c.id === cliId) || {};
+    const vNome = document.getElementById('v_nome')?.value || '';
+    const vCel  = document.getElementById('v_cel')?.value  || '';
 
-    document.getElementById('p_cidade').innerText = document.getElementById('filial').value;
-    document.getElementById('p_data').innerText = new Date().toLocaleDateString('pt-BR');
-    document.getElementById('p_cliente').innerText = (cli.nome || '').toUpperCase();
-    document.getElementById('p_cnpj').innerText = cli.doc || '';
-    document.getElementById('p_tel').innerText = cli.tel || '';
-    document.getElementById('p_obra').innerText = `${cli.end || ''}, ${cli.num || ''} ${cli.comp ? '- ' + cli.comp : ''}`.toUpperCase();
-    document.getElementById('p_responsavel').innerText = document.getElementById('contato_obra').value || "RESPONSÁVEL";
+    document.getElementById('p_cidade').innerText     = (document.getElementById('filial')?.value || currentUser.filial);
+    document.getElementById('p_data').innerText       = new Date().toLocaleDateString('pt-BR');
+    document.getElementById('p_cliente').innerText    = (cli.nome || '').toUpperCase();
+    document.getElementById('p_cnpj').innerText       = cli.doc || '';
+    document.getElementById('p_tel').innerText        = cli.tel || '';
+    document.getElementById('p_obra').innerText       = `${cli.end || ''}, ${cli.num || ''} ${cli.comp ? '- ' + cli.comp : ''}`.toUpperCase();
+    document.getElementById('p_responsavel').innerText= document.getElementById('contato_obra')?.value || "RESPONSÁVEL";
 
     const tb = document.getElementById('p_tabela_itens');
     tb.innerHTML = '';
@@ -547,21 +945,22 @@ function imprimir() {
       </tr>`;
     });
 
-    document.getElementById('pr_bomba').innerText = document.getElementById('cfg_bomba').value;
-    document.getElementById('pr_min_b').innerText = document.getElementById('cfg_min_b').value;
-    document.getElementById('pr_fibra').innerText = document.getElementById('cfg_fibra').value;
-    document.getElementById('pr_faltante').innerText = document.getElementById('cfg_faltante').value;
-    document.getElementById('pr_perm').innerText = document.getElementById('cfg_perm').value;
-    document.getElementById('pr_h_uteis').innerText = document.getElementById('cfg_h_uteis').value;
-    document.getElementById('pr_h_sab').innerText = document.getElementById('cfg_h_sab').value;
-    document.getElementById('pr_h_dom').innerText = document.getElementById('cfg_h_dom').value;
-    document.getElementById('pr_min_dom').innerText = document.getElementById('cfg_min_dom').value;
-    document.getElementById('pr_rac').innerText = document.getElementById('cfg_rac').value;
-    document.getElementById('pr_roc').innerText = document.getElementById('cfg_roc').value;
-    document.getElementById('pr_prazo').innerText = document.getElementById('cfg_prazo').value;
-    document.getElementById('p_obs').innerText = document.getElementById('obs').value || "A COMBINAR";
-    document.getElementById('p_vend').innerText = (vend.nome || '').toUpperCase();
-    document.getElementById('p_v_cel').innerText = vend.cel || '';
+    const get = id => document.getElementById(id)?.value || '';
+    document.getElementById('pr_bomba').innerText   = get('cfg_bomba');
+    document.getElementById('pr_min_b').innerText   = get('cfg_min_b');
+    document.getElementById('pr_fibra').innerText   = get('cfg_fibra');
+    document.getElementById('pr_faltante').innerText= get('cfg_faltante');
+    document.getElementById('pr_perm').innerText    = get('cfg_perm');
+    document.getElementById('pr_h_uteis').innerText = get('cfg_h_uteis');
+    document.getElementById('pr_h_sab').innerText   = get('cfg_h_sab');
+    document.getElementById('pr_h_dom').innerText   = get('cfg_h_dom');
+    document.getElementById('pr_min_dom').innerText = get('cfg_min_dom');
+    document.getElementById('pr_rac').innerText     = get('cfg_rac');
+    document.getElementById('pr_roc').innerText     = get('cfg_roc');
+    document.getElementById('pr_prazo').innerText   = get('cfg_prazo');
+    document.getElementById('p_obs').innerText      = get('obs') || "A COMBINAR";
+    document.getElementById('p_vend').innerText     = vNome.toUpperCase();
+    document.getElementById('p_v_cel').innerText    = vCel;
 
     setTimeout(() => window.print(), 100);
   } catch (e) {
@@ -582,10 +981,10 @@ function exportarPropostasExcel() {
   if (propostasCache.length === 0) return alert("Não há propostas cadastradas.");
   let csv = "\ufeffData;Cliente;Perfil;Filial;Status;Responsavel;Valor_Total\n";
   propostasCache.forEach(p => {
-    const cli = clientesCache.find(c => c.id === p.cliId);
-    const nomeCli = cli ? cli.nome : "Excluido";
+    const cli   = clientesCache.find(c => c.id === p.cliId);
+    const nomeC = cli ? cli.nome : "Excluido";
     const total = (p.itens || []).reduce((acc, it) => acc + Number(it.preco || 0), 0).toFixed(2);
-    csv += `${p.data || ''};${nomeCli};${p.perfilNome || ''};${p.filial || ''};${p.status || ''};${p.resp || ''};${total}\n`;
+    csv += `${p.data || ''};${nomeC};${p.perfilNome || ''};${p.filial || ''};${p.status || ''};${p.resp || ''};${total}\n`;
   });
   baixarCSV(csv, "propostas_solomix.csv");
 }
@@ -598,77 +997,30 @@ function baixarCSV(csv, nome) {
   link.click();
 }
 
-async function inicializar() {
-  const fcks = ["10 MPa","15 MPa","20 MPa","25 MPa","30 Mpa (HE)","30 Mpa","30 Mpa (PISO)","40 MPa"];
-  const fs = document.getElementById('fck');
-  fs.innerHTML = '';
-  fcks.forEach(v => fs.innerHTML += `<option value="${v}">${v}</option>`);
-  await carregarClientesCache();
-  await carregarPerfisCache();
-  await carregarVendedor();
-  await atualizarC();
-  await listarP();
-  await listarProgramacoes();
-  filtrarPerfis();
-  atualizarExtratoProgramacao();
-}
-
-window.salvarC = salvarC;
-window.atualizarC = atualizarC;
-window.editarC = editarC;
-window.excluirC = excluirC;
-window.limparC = limparC;
-window.salvarP = salvarP;
-window.listarP = listarP;
-window.editarP = editarP;
-window.excluirP = excluirP;
-window.salvarV = salvarV;
-window.salvarProgramacao = salvarProgramacao;
-window.listarProgramacoes = listarProgramacoes;
-window.editarProgramacao = editarProgramacao;
-window.excluirProgramacao = excluirProgramacao;
-window.carregarClienteProgramacao = carregarClienteProgramacao;
-window.gerarTxtProgramacao = gerarTxtProgramacao;
-window.imprimir = imprimir;
-window.exportarClientesExcel = exportarClientesExcel;
-window.exportarPropostasExcel = exportarPropostasExcel;
-window.mascaraTel = mascaraTel;
-window.mascaraDoc = mascaraDoc;
-window.mascaraCEP = mascaraCEP;
-window.autoCEP = autoCEP;
-window.tab = tab;
-window.addLinha = addLinha;
-window.renderItens = renderItens;
-window.removerItem = removerItem;
-window.atualizarExtratoProgramacao = atualizarExtratoProgramacao;
-window.filtrarPropostas = filtrarPropostas;
-window.filtrarPerfis = filtrarPerfis;
-window.editarPerfil = editarPerfil;
-window.excluirPerfil = excluirPerfil;
-window.atualizarDadosClienteProposta = atualizarDadosClienteProposta;
-
 function gerarTxtProgramacao() {
-  const cliId = document.getElementById('selProgC').value;
-  const cli = clientesCache.find(c => c.id === cliId) || {};
+  const cliId = document.getElementById('selProgC')?.value || '';
+  const cli   = clientesCache.find(c => c.id === cliId) || {};
+  const get   = id => document.getElementById(id)?.value || '';
+
   const txt = [
-    `Nome da obra: ${document.getElementById('prog_obra_nome').value || ''}`,
-    `Contrato: ${document.getElementById('prog_contrato').value || ''}`,
+    `Nome da obra: ${get('prog_obra_nome')}`,
+    `Contrato: ${get('prog_contrato')}`,
     `Cliente: ${cli.nome || ''}`,
     `CNPJ: ${cli.doc || ''}`,
-    `Endereço Cliente: ${(cli.end || '')}${cli.num ? ', ' + cli.num : ''}${cli.comp || ''}`,
-    `CNO: ${document.getElementById('prog_cno').value || ''}`,
-    `Email: ${document.getElementById('prog_email').value || ''}`,
-    `Contato da obra: ${document.getElementById('prog_contato_obra').value || ''}`,
-    `Solicitante: ${document.getElementById('prog_solicitante').value || ''}`,
-    `End. Obra: ${document.getElementById('prog_end_obra').value || ''}`,
-    `FCK: ${document.getElementById('prog_fck').value || ''}`,
-    `SLP: ${document.getElementById('prog_slp').value || ''}`,
-    `Brita: ${document.getElementById('prog_brita').value || ''}`,
-    `Preço: ${document.getElementById('prog_preco').value || ''}`,
-    `Bomba: ${document.getElementById('prog_bomba').value || ''}`,
-    `Volume: ${document.getElementById('prog_volume').value || ''}`,
-    `Forma pagamento: ${document.getElementById('prog_pagamento').value || ''}`,
-    `Observação: ${document.getElementById('prog_obs').value || ''}`
+    `Endereço Cliente: ${cli.end || ''}${cli.num ? ', ' + cli.num : ''}${cli.comp ? ' - ' + cli.comp : ''}`,
+    `CNO: ${get('prog_cno')}`,
+    `Email: ${get('prog_email')}`,
+    `Contato da obra: ${get('prog_contato_obra')}`,
+    `Solicitante: ${get('prog_solicitante')}`,
+    `End. Obra: ${get('prog_end_obra')}`,
+    `FCK: ${get('prog_fck')}`,
+    `SLP: ${get('prog_slp')}`,
+    `Brita: ${get('prog_brita')}`,
+    `Preço: ${get('prog_preco')}`,
+    `Bomba: ${get('prog_bomba')}`,
+    `Volume: ${get('prog_volume')}`,
+    `Forma pagamento: ${get('prog_pagamento')}`,
+    `Observação: ${get('prog_obs')}`
   ].join('\n');
 
   const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
@@ -677,8 +1029,82 @@ function gerarTxtProgramacao() {
   link.download = 'programacao.txt';
   link.click();
 }
-window.gerarTxtProgramacao = gerarTxtProgramacao;
 
-window.onload = async () => {
-  await inicializar();
+// ─── Initialization ───────────────────────────────────────────────────────────
+async function inicializar() {
+  const fcks = ["10 MPa","15 MPa","20 MPa","25 MPa","30 Mpa (HE)","30 Mpa","30 Mpa (PISO)","40 MPa"];
+  const fs = document.getElementById('fck');
+  if (fs) { fs.innerHTML = ''; fcks.forEach(v => fs.innerHTML += `<option value="${v}">${v}</option>`); }
+
+  await carregarClientesCache();
+  await carregarPerfisCache();
+  await carregarVendedor();
+  await atualizarC();
+  await listarP();
+  await listarProgramacoes();
+  filtrarPerfis();
+  atualizarExtratoProgramacao();
+  if (podeGerenciarUsuarios()) await carregarUsuarios();
+}
+
+// ─── Expose all functions to window (needed for inline onclick handlers) ──────
+window.fazerLogin            = fazerLogin;
+window.fazerLogout           = fazerLogout;
+window.abrirModalSenha       = abrirModalSenha;
+window.fecharModalSenha      = fecharModalSenha;
+window.trocarSenha           = trocarSenha;
+window.trocarSenhaPerfil     = trocarSenhaPerfil;
+window.tab                   = tab;
+window.mascaraTel            = mascaraTel;
+window.mascaraDoc            = mascaraDoc;
+window.mascaraCEP            = mascaraCEP;
+window.autoCEP               = autoCEP;
+window.salvarC               = salvarC;
+window.atualizarC            = atualizarC;
+window.editarC               = editarC;
+window.excluirC              = excluirC;
+window.limparC               = limparC;
+window.atualizarDadosClienteProposta = atualizarDadosClienteProposta;
+window.addLinha              = addLinha;
+window.renderItens           = renderItens;
+window.removerItem           = removerItem;
+window.salvarP               = salvarP;
+window.listarP               = listarP;
+window.editarP               = editarP;
+window.excluirP              = excluirP;
+window.filtrarPropostas      = filtrarPropostas;
+window.salvarV               = salvarV;
+window.excluirPerfil         = excluirPerfil;
+window.editarPerfil          = editarPerfil;
+window.filtrarPerfis         = filtrarPerfis;
+window.limparPerfil          = limparPerfil;
+window.salvarProgramacao     = salvarProgramacao;
+window.listarProgramacoes    = listarProgramacoes;
+window.editarProgramacao     = editarProgramacao;
+window.excluirProgramacao    = excluirProgramacao;
+window.carregarClienteProgramacao = carregarClienteProgramacao;
+window.atualizarExtratoProgramacao = atualizarExtratoProgramacao;
+window.gerarTxtProgramacao   = gerarTxtProgramacao;
+window.imprimir              = imprimir;
+window.exportarClientesExcel = exportarClientesExcel;
+window.exportarPropostasExcel= exportarPropostasExcel;
+window.salvarUsuario         = salvarUsuario;
+window.editarUsuario         = editarUsuario;
+window.excluirUsuario        = excluirUsuario;
+window.limparUsuario         = limparUsuario;
+
+// ─── Startup ──────────────────────────────────────────────────────────────────
+window.onload = () => {
+  const sess = sessionStorage.getItem(SESSION_KEY);
+  if (sess) {
+    try {
+      currentUser = JSON.parse(sess);
+      document.getElementById('tela-login').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      configurarUI();
+      inicializar();
+    } catch (e) {
+      sessionStorage.removeItem(SESSION_KEY);
+    }
+  }
 };
