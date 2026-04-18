@@ -64,6 +64,23 @@ function aplicarFiltroRole(lista) {
   return lista.filter(r => !r.criadoPor || r.criadoPor === currentUser.username);
 }
 
+// Profile-specific visibility: consultor sees ONLY their own profiles (no legacy fallback)
+function filtrarPerfisRole(lista) {
+  if (!currentUser || isAdmin()) return lista;
+  if (isGerente()) {
+    return lista.filter(p => !p.filial || p.filial === currentUser.filial);
+  }
+  // consultor_comercial: strictly only profiles created by themselves
+  return lista.filter(p => p.criadoPor === currentUser.username);
+}
+
+// Returns true if the current user is allowed to edit/delete the given profile
+function podeDeletarPerfil(p) {
+  if (isAdmin()) return true;
+  if (isGerente()) return !p.filial || p.filial === currentUser.filial;
+  return p.criadoPor === currentUser.username;
+}
+
 function filialParaRegistro() {
   // For admin using a proposal form the filial field is editable
   return currentUser?.filial || 'Divinopolis';
@@ -413,6 +430,7 @@ async function carregarPerfisCache() {
   const snap = await getDocs(query(collection(db, "perfis_vendedor"), orderBy("data", "desc")));
   perfisCache = [];
   snap.forEach(d => perfisCache.push({ id: d.id, ...d.data() }));
+  perfisCache = filtrarPerfisRole(perfisCache);
 
   const selV = document.getElementById('selV');
   const filtroPerfil = document.getElementById('filtroPropostaPerfil');
@@ -443,12 +461,14 @@ function filtrarPerfis() {
   perfisCache
     .filter(p => !filtro || (p.nome || '').toLowerCase().includes(filtro) || (p.cel || '').toLowerCase().includes(filtro))
     .forEach((p, i) => {
+      const filialInfo = (isAdmin() && p.filial) ? ` <small style="color:#888">(${esc(p.filial)})</small>` : '';
+      const podeAcao = podeDeletarPerfil(p);
       tbody.innerHTML += `<tr>
-        <td>${p.nome || ''}</td>
-        <td>${p.cel || ''}</td>
+        <td>${esc(p.nome || '')}${filialInfo}</td>
+        <td>${esc(p.cel || '')}</td>
         <td class="actions">
-          <span onclick="editarPerfil(${i})" title="Editar">✏️</span>
-          <span onclick="excluirPerfil('${p.id}')" title="Excluir">🗑️</span>
+          ${podeAcao ? `<span onclick="editarPerfil(${i})" title="Editar">✏️</span>` : ''}
+          ${podeAcao ? `<span onclick="excluirPerfil('${esc(p.id)}')" title="Excluir">🗑️</span>` : ''}
         </td>
       </tr>`;
     });
@@ -475,6 +495,7 @@ function limparPerfil() {
 }
 
 async function salvarV() {
+  if (!currentUser) return alert("Sessão inválida. Faça login novamente.");
   const idx = document.getElementById('idx_v')?.value || '-1';
   const obj = {
     data: new Date().toLocaleDateString('pt-BR'),
@@ -485,10 +506,16 @@ async function salvarV() {
   if (!obj.nome) return alert("Informe o nome do perfil!");
 
   if (idx === '-1') {
+    // New profile: record creator metadata
+    obj.criadoPor = currentUser.username;
+    obj.filial    = currentUser.filial || '';
+    obj.role      = currentUser.role   || '';
     await addDoc(collection(db, "perfis_vendedor"), obj);
   } else {
-    const refId = perfisCache[Number(idx)]?.id;
+    const existing = perfisCache[Number(idx)];
+    const refId = existing?.id;
     if (!refId) return alert("Perfil não encontrado para atualização.");
+    if (!podeDeletarPerfil(existing)) return alert("Sem permissão para editar este perfil.");
     await updateDoc(doc(db, "perfis_vendedor", refId), obj);
   }
 
@@ -500,6 +527,8 @@ async function salvarV() {
 
 async function excluirPerfil(id) {
   if (!confirm("Excluir perfil?")) return;
+  const p = perfisCache.find(item => item.id === id);
+  if (p && !podeDeletarPerfil(p)) return alert("Sem permissão para excluir este perfil.");
   await deleteDoc(doc(db, "perfis_vendedor", id));
   await carregarPerfisCache();
   filtrarPerfis();
