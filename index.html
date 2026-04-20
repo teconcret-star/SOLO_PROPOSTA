@@ -133,9 +133,41 @@
       #doc-programacao .prog-title { font-size: 14px; font-weight: bold; text-align: center; margin-bottom: 10px; text-transform: uppercase; }
       #doc-programacao .prog-line { margin: 4px 0; }
     }
+    /* GOOGLE CALENDAR INTEGRATION */
+    .gcal-status {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 12px; border-radius: 6px; margin-bottom: 10px;
+      font-size: 0.85rem; font-weight: bold;
+    }
+    .gcal-status.desconectado { background: #fdecea; color: #c62828; border: 1px solid #f5c6cb; }
+    .gcal-status.conectado    { background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
+    .gcal-status .gcal-dot {
+      width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+    }
+    .gcal-status.desconectado .gcal-dot { background: #e53935; }
+    .gcal-status.conectado    .gcal-dot { background: #43a047; }
+    .gcal-help {
+      font-size: 0.75rem; color: #777; margin: 6px 0 12px;
+      line-height: 1.5;
+    }
+    .gcal-help a { color: #1a73e8; }
+    .btn-google {
+      background: #1a73e8; color: white; border: none; padding: 11px;
+      width: 100%; border-radius: 4px; font-weight: bold; cursor: pointer;
+      font-size: 0.9rem; display: flex; align-items: center; justify-content: center;
+      gap: 8px; margin-top: 6px;
+    }
+    .btn-google:hover { background: #1558b0; }
+    .btn-google-disconnect {
+      background: #e53935; color: white; border: none; padding: 11px;
+      width: 100%; border-radius: 4px; font-weight: bold; cursor: pointer;
+      font-size: 0.9rem; margin-top: 6px;
+    }
+    .btn-google-disconnect:hover { background: #b71c1c; }
   </style>
 </head>
 <body>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 
 <!-- ========== TELA DE LOGIN ========== -->
 <div id="tela-login">
@@ -437,6 +469,32 @@
           <tbody id="listaV"></tbody>
         </table>
       </div>
+
+      <hr style="margin: 20px 0;">
+
+      <h3>🗓️ Google Calendar</h3>
+      <div id="gcal-status-box" class="gcal-status desconectado">
+        <span class="gcal-dot"></span>
+        <span id="gcal-status-text">Não conectado ao Google</span>
+      </div>
+      <label>Client ID do Google OAuth 2.0</label>
+      <input type="text" id="gcal_client_id" class="field"
+             placeholder="Ex: 123456789-abc.apps.googleusercontent.com">
+      <button class="btn" style="background:#555; margin-top:6px;" onclick="salvarGcalClientId()">SALVAR CLIENT ID</button>
+      <p class="gcal-help">
+        Para obter o Client ID, acesse o
+        <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a>,
+        crie um projeto, ative a <strong>Google Calendar API</strong> e crie credenciais
+        <em>OAuth 2.0 para Aplicativo da Web</em>. Adicione a URL deste app como
+        "Origem JavaScript autorizada".
+      </p>
+      <button class="btn-google" id="btn-conectar-google" onclick="conectarGoogle()">
+        🔑 ENTRAR COM GOOGLE
+      </button>
+      <button class="btn-google-disconnect" id="btn-desconectar-google"
+              style="display:none" onclick="desconectarGoogle()">
+        DESCONECTAR GOOGLE
+      </button>
 
       <hr style="margin: 20px 0;">
 
