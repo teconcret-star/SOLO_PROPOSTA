@@ -39,10 +39,12 @@ let programacoesCache = [];
 let usuariosCache = [];
 
 // ─── Google Calendar OAuth state ─────────────────────────────────────────────
-const GCAL_CLIENT_ID_KEY = 'gcal_client_id';
-let gcalToken = null;        // current access token
-let gcalTokenExpiry = 0;     // expiry time (Date.now() ms)
-let gcalTokenClient = null;  // GIS token client instance
+const GCAL_CLIENT_ID_KEY  = 'gcal_client_id';
+const GCAL_TIMEZONE       = 'America/Sao_Paulo';
+let gcalToken = null;           // current access token
+let gcalTokenExpiry = 0;        // expiry time (Date.now() ms)
+let gcalTokenClient = null;     // GIS token client instance
+let gcalTokenRefreshing = false; // guard against concurrent refresh requests
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const ADMIN_USER = 'admin';
@@ -1184,27 +1186,27 @@ async function criarEventoGcalAPI(eventBody) {
   if (!gcalToken || Date.now() >= gcalTokenExpiry) {
     const clientId = obterGcalClientId();
     if (!clientId || typeof google === 'undefined' || !google?.accounts?.oauth2) return false;
+    // Prevent concurrent token refresh requests
+    if (gcalTokenRefreshing) return false;
+    gcalTokenRefreshing = true;
     return new Promise((resolve) => {
+      const handleTokenResponse = async (resp) => {
+        gcalTokenRefreshing = false;
+        if (resp.error) { resolve(false); return; }
+        gcalToken = resp.access_token;
+        // GIS tokens expire in 3600 seconds by default
+        gcalTokenExpiry = Date.now() + (resp.expires_in || 3600) * 1000;
+        atualizarUiGcal();
+        resolve(await _postEventoGcal(eventBody));
+      };
       if (!gcalTokenClient) {
         gcalTokenClient = google.accounts.oauth2.initTokenClient({
           client_id: clientId,
           scope: 'https://www.googleapis.com/auth/calendar.events',
-          callback: async (resp) => {
-            if (resp.error) { resolve(false); return; }
-            gcalToken = resp.access_token;
-            gcalTokenExpiry = Date.now() + (resp.expires_in || 3600) * 1000;
-            atualizarUiGcal();
-            resolve(await _postEventoGcal(eventBody));
-          }
+          callback: handleTokenResponse
         });
       } else {
-        gcalTokenClient.callback = async (resp) => {
-          if (resp.error) { resolve(false); return; }
-          gcalToken = resp.access_token;
-          gcalTokenExpiry = Date.now() + (resp.expires_in || 3600) * 1000;
-          atualizarUiGcal();
-          resolve(await _postEventoGcal(eventBody));
-        };
+        gcalTokenClient.callback = handleTokenResponse;
       }
       gcalTokenClient.requestAccessToken({ prompt: '' });
     });
@@ -1227,12 +1229,15 @@ async function _postEventoGcal(eventBody) {
     );
     if (!resp.ok) {
       const err = await resp.json().catch(() => ({}));
+      const msg = err?.error?.message || `HTTP ${resp.status}`;
       console.error('Google Calendar API error:', err);
+      alert(`Erro ao criar evento no Google Calendar: ${msg}\nUsando método alternativo.`);
       return false;
     }
     return true;
   } catch (e) {
     console.error('Google Calendar fetch error:', e);
+    alert('Erro de rede ao acessar o Google Calendar. Usando método alternativo.');
     return false;
   }
 }
@@ -1302,11 +1307,11 @@ function adicionarGoogleAgenda() {
       description: desc,
       start: {
         dateTime: `${dataVal}T${horarioVal}:00`,
-        timeZone: 'America/Sao_Paulo'
+        timeZone: GCAL_TIMEZONE
       },
       end: {
         dateTime: `${endDate.getFullYear()}-${pad(endDate.getMonth() + 1)}-${pad(endDate.getDate())}T${pad(endDate.getHours())}:${pad(endDate.getMinutes())}:00`,
-        timeZone: 'America/Sao_Paulo'
+        timeZone: GCAL_TIMEZONE
       }
     };
     criarEventoGcalAPI(eventBody).then(ok => {
