@@ -38,6 +38,12 @@ let propostasCache = [];
 let programacoesCache = [];
 let usuariosCache = [];
 
+// ─── Google Calendar OAuth state ─────────────────────────────────────────────
+const GCAL_CLIENT_ID_KEY = 'gcal_client_id';
+let gcalToken = null;        // current access token
+let gcalTokenExpiry = 0;     // expiry time (Date.now() ms)
+let gcalTokenClient = null;  // GIS token client instance
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 const ADMIN_USER = 'admin';
 const ADMIN_SENHA_KEY = 'solomix_admin_senha';
@@ -1088,6 +1094,149 @@ function gerarTxtProgramacao() {
   link.click();
 }
 
+// ─── Google Calendar OAuth helpers ───────────────────────────────────────────
+function atualizarUiGcal() {
+  const statusBox  = document.getElementById('gcal-status-box');
+  const statusText = document.getElementById('gcal-status-text');
+  const btnConectar    = document.getElementById('btn-conectar-google');
+  const btnDesconectar = document.getElementById('btn-desconectar-google');
+  if (!statusBox) return;
+
+  const conectado = gcalToken && Date.now() < gcalTokenExpiry;
+  if (conectado) {
+    statusBox.className = 'gcal-status conectado';
+    statusText.textContent = '✓ Conectado ao Google Calendar';
+    btnConectar.style.display    = 'none';
+    btnDesconectar.style.display = 'block';
+  } else {
+    statusBox.className = 'gcal-status desconectado';
+    statusText.textContent = 'Não conectado ao Google';
+    btnConectar.style.display    = 'block';
+    btnDesconectar.style.display = 'none';
+  }
+}
+
+function inicializarGcalClienteId() {
+  const saved = localStorage.getItem(GCAL_CLIENT_ID_KEY) || '';
+  const campo = document.getElementById('gcal_client_id');
+  if (campo) campo.value = saved;
+}
+
+function salvarGcalClientId() {
+  const campo = document.getElementById('gcal_client_id');
+  const clientId = (campo?.value || '').trim();
+  if (!clientId) { alert('Informe o Client ID do Google OAuth 2.0.'); return; }
+  localStorage.setItem(GCAL_CLIENT_ID_KEY, clientId);
+  gcalTokenClient = null; // reset so it's re-initialized with the new ID
+  alert('Client ID salvo com sucesso!');
+}
+
+function obterGcalClientId() {
+  const campo = document.getElementById('gcal_client_id');
+  const fromField = (campo?.value || '').trim();
+  if (fromField) return fromField;
+  return localStorage.getItem(GCAL_CLIENT_ID_KEY) || '';
+}
+
+function conectarGoogle() {
+  const clientId = obterGcalClientId();
+  if (!clientId) {
+    alert('Informe e salve o Client ID do Google OAuth 2.0 antes de conectar.');
+    return;
+  }
+  if (typeof google === 'undefined' || !google?.accounts?.oauth2) {
+    alert('A biblioteca do Google ainda está carregando. Aguarde alguns segundos e tente novamente.');
+    return;
+  }
+  // Save any typed client ID before connecting
+  const campo = document.getElementById('gcal_client_id');
+  if (campo?.value?.trim()) localStorage.setItem(GCAL_CLIENT_ID_KEY, campo.value.trim());
+
+  gcalTokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: clientId,
+    scope: 'https://www.googleapis.com/auth/calendar.events',
+    callback: (resp) => {
+      if (resp.error) {
+        alert('Erro ao conectar ao Google: ' + resp.error);
+        return;
+      }
+      gcalToken = resp.access_token;
+      // GIS tokens expire in 3600 s by default
+      gcalTokenExpiry = Date.now() + (resp.expires_in || 3600) * 1000;
+      atualizarUiGcal();
+    }
+  });
+  gcalTokenClient.requestAccessToken({ prompt: 'consent' });
+}
+
+function desconectarGoogle() {
+  if (gcalToken && typeof google !== 'undefined' && google?.accounts?.oauth2) {
+    google.accounts.oauth2.revoke(gcalToken, () => {});
+  }
+  gcalToken = null;
+  gcalTokenExpiry = 0;
+  gcalTokenClient = null;
+  atualizarUiGcal();
+}
+
+async function criarEventoGcalAPI(eventBody) {
+  // If token is expired or missing, request a new one first
+  if (!gcalToken || Date.now() >= gcalTokenExpiry) {
+    const clientId = obterGcalClientId();
+    if (!clientId || typeof google === 'undefined' || !google?.accounts?.oauth2) return false;
+    return new Promise((resolve) => {
+      if (!gcalTokenClient) {
+        gcalTokenClient = google.accounts.oauth2.initTokenClient({
+          client_id: clientId,
+          scope: 'https://www.googleapis.com/auth/calendar.events',
+          callback: async (resp) => {
+            if (resp.error) { resolve(false); return; }
+            gcalToken = resp.access_token;
+            gcalTokenExpiry = Date.now() + (resp.expires_in || 3600) * 1000;
+            atualizarUiGcal();
+            resolve(await _postEventoGcal(eventBody));
+          }
+        });
+      } else {
+        gcalTokenClient.callback = async (resp) => {
+          if (resp.error) { resolve(false); return; }
+          gcalToken = resp.access_token;
+          gcalTokenExpiry = Date.now() + (resp.expires_in || 3600) * 1000;
+          atualizarUiGcal();
+          resolve(await _postEventoGcal(eventBody));
+        };
+      }
+      gcalTokenClient.requestAccessToken({ prompt: '' });
+    });
+  }
+  return _postEventoGcal(eventBody);
+}
+
+async function _postEventoGcal(eventBody) {
+  try {
+    const resp = await fetch(
+      'https://www.googleapis.com/calendar/v3/calendars/primary/events',
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + gcalToken,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(eventBody)
+      }
+    );
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      console.error('Google Calendar API error:', err);
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.error('Google Calendar fetch error:', e);
+    return false;
+  }
+}
+
 function adicionarGoogleAgenda() {
   const cliId = document.getElementById('selProgC')?.value || '';
   const cli   = clientesCache.find(c => c.id === cliId) || {};
@@ -1143,6 +1292,41 @@ function adicionarGoogleAgenda() {
 
   const location = get('prog_end_obra');
 
+  // If connected via OAuth, use the Calendar API directly
+  const clientId = obterGcalClientId();
+  const tokenValido = gcalToken && Date.now() < gcalTokenExpiry;
+  if (clientId && (tokenValido || gcalTokenClient)) {
+    const eventBody = {
+      summary: titulo,
+      location: location,
+      description: desc,
+      start: {
+        dateTime: `${dataVal}T${horarioVal}:00`,
+        timeZone: 'America/Sao_Paulo'
+      },
+      end: {
+        dateTime: `${endDate.getFullYear()}-${pad(endDate.getMonth() + 1)}-${pad(endDate.getDate())}T${pad(endDate.getHours())}:${pad(endDate.getMinutes())}:00`,
+        timeZone: 'America/Sao_Paulo'
+      }
+    };
+    criarEventoGcalAPI(eventBody).then(ok => {
+      if (ok) {
+        alert('✅ Evento adicionado com sucesso ao Google Calendar!');
+        atualizarUiGcal();
+      } else {
+        // Fallback to URL approach
+        const url = 'https://calendar.google.com/calendar/render?action=TEMPLATE' +
+          '&text=' + encodeURIComponent(titulo) +
+          '&dates=' + encodeURIComponent(startDT) + '/' + encodeURIComponent(endDT) +
+          '&details=' + encodeURIComponent(desc) +
+          '&location=' + encodeURIComponent(location);
+        window.open(url, '_blank');
+      }
+    });
+    return;
+  }
+
+  // Fallback: open Google Calendar URL (user must be logged in their browser)
   const url = 'https://calendar.google.com/calendar/render?action=TEMPLATE' +
     '&text=' + encodeURIComponent(titulo) +
     '&dates=' + encodeURIComponent(startDT) + '/' + encodeURIComponent(endDT) +
@@ -1167,6 +1351,8 @@ async function inicializar() {
   filtrarPerfis();
   atualizarExtratoProgramacao();
   if (podeGerenciarUsuarios()) await carregarUsuarios();
+  inicializarGcalClienteId();
+  atualizarUiGcal();
 }
 
 // ─── Expose all functions to window (needed for inline onclick handlers) ──────
@@ -1208,6 +1394,9 @@ window.carregarClienteProgramacao = carregarClienteProgramacao;
 window.atualizarExtratoProgramacao = atualizarExtratoProgramacao;
 window.gerarTxtProgramacao   = gerarTxtProgramacao;
 window.adicionarGoogleAgenda = adicionarGoogleAgenda;
+window.salvarGcalClientId    = salvarGcalClientId;
+window.conectarGoogle        = conectarGoogle;
+window.desconectarGoogle     = desconectarGoogle;
 window.imprimir              = imprimir;
 window.exportarClientesExcel = exportarClientesExcel;
 window.exportarPropostasExcel= exportarPropostasExcel;
