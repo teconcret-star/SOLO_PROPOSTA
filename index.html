@@ -346,6 +346,10 @@
       <input type="hidden" id="idx_prog" value="-1">
 
       <div class="row">
+        <div class="col"><label>Data do Evento</label><input type="date" id="prog_data_evento" class="field" oninput="atualizarExtratoProgramacao()"></div>
+        <div class="col"><label>Horário do Evento</label><input type="time" id="prog_horario_evento" class="field" oninput="atualizarExtratoProgramacao()"></div>
+      </div>
+      <div class="row">
         <div class="col"><label>Cliente</label><select id="selProgC" class="field" onchange="carregarClienteProgramacao(this.value)"></select></div>
         <div class="col"><label>Nome da Obra</label><input type="text" id="prog_obra_nome" class="field" placeholder="Nome da obra"></div>
       </div>
@@ -379,9 +383,12 @@
       <textarea id="prog_obs" class="field" rows="3" placeholder="Observações da programação"></textarea>
       <button class="btn" onclick="salvarProgramacao()">SALVAR PROGRAMAÇÃO</button>
       <button class="btn" style="background:#444; margin-top:8px;" onclick="gerarTxtProgramacao()">GERAR TXT</button>
+      <button class="btn" style="background:#1a73e8; margin-top:8px;" onclick="adicionarGoogleAgenda()">📅 ADICIONAR AO GOOGLE AGENDA</button>
 
       <div class="prog-box">
         <div class="prog-title">Extrato da Programação</div>
+        <div class="prog-line"><strong>Data do Evento:</strong> <span id="pp_data_evento"></span></div>
+        <div class="prog-line"><strong>Horário:</strong> <span id="pp_horario_evento"></span></div>
         <div class="prog-line"><strong>Nome da Obra:</strong> <span id="pp_obra_nome"></span></div>
         <div class="prog-line"><strong>Contrato:</strong> <span id="pp_contrato"></span></div>
         <div class="prog-line"><strong>Cliente:</strong> <span id="pp_cliente"></span></div>

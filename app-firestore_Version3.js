@@ -733,9 +733,11 @@ async function salvarProgramacao() {
   const filialVal = currentUser.filial;
 
   const obj = {
-    data:         new Date().toLocaleDateString('pt-BR'),
-    cliId:        document.getElementById('selProgC')?.value         || '',
-    obra_nome:    document.getElementById('prog_obra_nome')?.value   || '',
+    data:          new Date().toLocaleDateString('pt-BR'),
+    data_evento:   document.getElementById('prog_data_evento')?.value   || '',
+    horario_evento:document.getElementById('prog_horario_evento')?.value|| '',
+    cliId:         document.getElementById('selProgC')?.value         || '',
+    obra_nome:     document.getElementById('prog_obra_nome')?.value   || '',
     contrato:     document.getElementById('prog_contrato')?.value    || '',
     solicitante:  document.getElementById('prog_solicitante')?.value || '',
     cno:          document.getElementById('prog_cno')?.value         || '',
@@ -797,6 +799,8 @@ function editarProgramacao(i) {
   if (!p) return;
   const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
   set('selProgC',          p.cliId          || '');
+  set('prog_data_evento',  p.data_evento    || '');
+  set('prog_horario_evento', p.horario_evento || '');
   set('prog_obra_nome',    p.obra_nome       || '');
   set('prog_contrato',     p.contrato        || '');
   set('prog_solicitante',  p.solicitante     || '');
@@ -851,6 +855,17 @@ function atualizarExtratoProgramacao() {
   set('pp_volume',      get('prog_volume'));
   set('pp_pagamento',   get('prog_pagamento'));
   set('pp_obs',         get('prog_obs'));
+
+  // date/time for event
+  const dataEvento   = get('prog_data_evento');
+  const horarioEvento = get('prog_horario_evento');
+  if (dataEvento) {
+    const [y, m, d] = dataEvento.split('-');
+    set('pp_data_evento', `${d}/${m}/${y}`);
+  } else {
+    set('pp_data_evento', '');
+  }
+  set('pp_horario_evento', horarioEvento);
 }
 
 // ─── Usuários ─────────────────────────────────────────────────────────────────
@@ -1038,7 +1053,14 @@ function gerarTxtProgramacao() {
   const cli   = clientesCache.find(c => c.id === cliId) || {};
   const get   = id => document.getElementById(id)?.value || '';
 
+  const dataEventoRaw = get('prog_data_evento');
+  const dataEventoFmt = dataEventoRaw
+    ? (() => { const [y, m, d] = dataEventoRaw.split('-'); return `${d}/${m}/${y}`; })()
+    : '';
+
   const txt = [
+    `Data do Evento: ${dataEventoFmt}`,
+    `Horário: ${get('prog_horario_evento')}`,
     `Nome da obra: ${get('prog_obra_nome')}`,
     `Contrato: ${get('prog_contrato')}`,
     `Cliente: ${cli.nome || ''}`,
@@ -1064,6 +1086,70 @@ function gerarTxtProgramacao() {
   link.href = URL.createObjectURL(blob);
   link.download = 'programacao.txt';
   link.click();
+}
+
+function adicionarGoogleAgenda() {
+  const cliId = document.getElementById('selProgC')?.value || '';
+  const cli   = clientesCache.find(c => c.id === cliId) || {};
+  const get   = id => document.getElementById(id)?.value || '';
+
+  const dataVal    = get('prog_data_evento');
+  const horarioVal = get('prog_horario_evento');
+
+  if (!dataVal || !horarioVal) {
+    alert('Informe a data e o horário do evento antes de adicionar ao Google Agenda.');
+    return;
+  }
+
+  // Build datetime strings (local time, no Z suffix)
+  const dateStr = dataVal.replace(/-/g, '');
+  const timeStr = horarioVal.replace(':', '') + '00';
+  const startDT = `${dateStr}T${timeStr}`;
+
+  // End time = start + 1 hour (handle midnight rollover)
+  const startDate = new Date(`${dataVal}T${horarioVal}:00`);
+  const endDate   = new Date(startDate.getTime() + 60 * 60 * 1000);
+  const pad       = n => String(n).padStart(2, '0');
+  const endDateStr = `${endDate.getFullYear()}${pad(endDate.getMonth() + 1)}${pad(endDate.getDate())}`;
+  const endDT = `${endDateStr}T${pad(endDate.getHours())}${pad(endDate.getMinutes())}00`;
+
+  const titulo = `Programação: ${get('prog_obra_nome') || 'Obra'} - ${cli.nome || 'Cliente'}`;
+
+  const [y, mo, d] = dataVal.split('-');
+  const dataEventoFmt = `${d}/${mo}/${y}`;
+  const endCli = `${cli.end || ''}${cli.num ? ', ' + cli.num : ''}${cli.comp ? ' - ' + cli.comp : ''}`;
+  const desc = [
+    `Data do Evento: ${dataEventoFmt}`,
+    `Horário: ${horarioVal}`,
+    `Nome da Obra: ${get('prog_obra_nome')}`,
+    `Contrato: ${get('prog_contrato')}`,
+    `Cliente: ${cli.nome || ''}`,
+    `CNPJ: ${cli.doc || ''}`,
+    `Endereço Cliente: ${endCli}`,
+    `CNO: ${get('prog_cno')}`,
+    `Email: ${get('prog_email')}`,
+    `Contato da Obra: ${get('prog_contato_obra')}`,
+    `Solicitante: ${get('prog_solicitante')}`,
+    `Endereço da Obra: ${get('prog_end_obra')}`,
+    `FCK: ${get('prog_fck')}`,
+    `SLP: ${get('prog_slp')}`,
+    `Brita: ${get('prog_brita')}`,
+    `Preço: R$ ${get('prog_preco')}`,
+    `Bomba: R$ ${get('prog_bomba')}`,
+    `Volume: ${get('prog_volume')}`,
+    `Forma de Pagamento: ${get('prog_pagamento')}`,
+    `Observação: ${get('prog_obs')}`
+  ].join('\n');
+
+  const location = get('prog_end_obra');
+
+  const url = 'https://calendar.google.com/calendar/render?action=TEMPLATE' +
+    '&text=' + encodeURIComponent(titulo) +
+    '&dates=' + encodeURIComponent(startDT) + '/' + encodeURIComponent(endDT) +
+    '&details=' + encodeURIComponent(desc) +
+    '&location=' + encodeURIComponent(location);
+
+  window.open(url, '_blank');
 }
 
 // ─── Initialization ───────────────────────────────────────────────────────────
@@ -1121,6 +1207,7 @@ window.excluirProgramacao    = excluirProgramacao;
 window.carregarClienteProgramacao = carregarClienteProgramacao;
 window.atualizarExtratoProgramacao = atualizarExtratoProgramacao;
 window.gerarTxtProgramacao   = gerarTxtProgramacao;
+window.adicionarGoogleAgenda = adicionarGoogleAgenda;
 window.imprimir              = imprimir;
 window.exportarClientesExcel = exportarClientesExcel;
 window.exportarPropostasExcel= exportarPropostasExcel;
