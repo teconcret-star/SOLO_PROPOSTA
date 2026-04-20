@@ -171,6 +171,9 @@ function configurarUI() {
   const navU = document.getElementById('nav-usuarios');
   if (navU) navU.style.display = podeGerenciarUsuarios() ? '' : 'none';
 
+  const navD = document.getElementById('nav-dashboard');
+  if (navD) navD.style.display = (isAdmin() || isGerente()) ? '' : 'none';
+
   // For gerente/consultor, lock filial fields to their own filial
   const filialSelProposta = document.getElementById('filial');
   if (filialSelProposta && !isAdmin()) {
@@ -622,6 +625,9 @@ async function salvarP() {
     resp:       document.getElementById('contato_obra')?.value || '',
     filial:     filialVal,
     obs:        document.getElementById('obs')?.value || '',
+    motivoPerda: (document.getElementById('status')?.value === 'perdida')
+                  ? (document.getElementById('motivo_perda')?.value || '')
+                  : '',
     criadoPor:  currentUser.username,
     cfg: {
       b:   document.getElementById('cfg_bomba')?.value   || '',
@@ -707,6 +713,9 @@ function editarP(i) {
   document.getElementById('contato_obra').value    = p.resp   || '';
   if (isAdmin()) document.getElementById('filial').value = p.filial || 'Divinopolis';
   document.getElementById('obs').value             = p.obs    || '';
+  const mpEl = document.getElementById('motivo_perda');
+  if (mpEl) mpEl.value = p.motivoPerda || '';
+  alternarMotivPerda(p.status || 'andamento');
   itensProposta = [...(p.itens || [])];
   renderItens();
 
@@ -1341,6 +1350,224 @@ function adicionarGoogleAgenda() {
   window.open(url, '_blank');
 }
 
+// ─── Motivo Perda toggle ──────────────────────────────────────────────────────
+function alternarMotivPerda(statusVal) {
+  const wrap = document.getElementById('motivo_perda_wrap');
+  if (wrap) wrap.style.display = statusVal === 'perdida' ? 'block' : 'none';
+}
+
+// ─── Dashboard ────────────────────────────────────────────────────────────────
+function parseDateBR(s) {
+  // Parse dd/mm/yyyy → Date
+  if (!s) return null;
+  const parts = s.split('/');
+  if (parts.length !== 3) return null;
+  const day = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10);
+  const year = parseInt(parts[2], 10);
+  if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
+  return new Date(year, month - 1, day);
+}
+
+function fmtBRL(v) {
+  return Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function calcReceitaProposta(p) {
+  return (p.itens || []).reduce((acc, it) => {
+    const vol   = parseFloat(it.volume) || 0;
+    const preco = parseFloat(it.preco)  || 0;
+    return acc + vol * preco;
+  }, 0);
+}
+
+function renderizarDashboard() {
+  if (!isAdmin() && !isGerente()) return;
+
+  const filtroFilial   = document.getElementById('dash_filial')?.value   || '';
+  const filtroVendedor = document.getElementById('dash_vendedor')?.value || '';
+  const filtroPeriodo  = document.getElementById('dash_periodo')?.value  || '';
+
+  const agora = new Date();
+  const inicioMes      = new Date(agora.getFullYear(), agora.getMonth(), 1);
+  const mesInicioTrim  = agora.getMonth() - 2;
+  const anoInicioTrim  = agora.getFullYear() + Math.floor(mesInicioTrim / 12);
+  const inicioTrimestre= new Date(anoInicioTrim, ((mesInicioTrim % 12) + 12) % 12, 1);
+  const inicioAno      = new Date(agora.getFullYear(), 0, 1);
+
+  // Build the full propostas list for admin (all units), gerente (own filial)
+  let lista = [...propostasCache];
+
+  // Apply filial filter
+  if (filtroFilial) lista = lista.filter(p => p.filial === filtroFilial);
+
+  // Apply vendedor filter
+  if (filtroVendedor) lista = lista.filter(p => p.perfilNome === filtroVendedor);
+
+  // Apply period filter
+  if (filtroPeriodo) {
+    const inicio = filtroPeriodo === 'mes' ? inicioMes
+                 : filtroPeriodo === 'trimestre' ? inicioTrimestre
+                 : inicioAno;
+    lista = lista.filter(p => {
+      const d = parseDateBR(p.data);
+      return d && d >= inicio;
+    });
+  }
+
+  const total     = lista.length;
+  const andamento = lista.filter(p => p.status === 'andamento').length;
+  const fechadas  = lista.filter(p => p.status === 'fechada').length;
+  const perdidas  = lista.filter(p => p.status === 'perdida').length;
+  const receita   = lista.filter(p => p.status === 'fechada')
+                         .reduce((acc, p) => acc + calcReceitaProposta(p), 0);
+
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  set('dash_total',     total);
+  set('dash_andamento', andamento);
+  set('dash_fechadas',  fechadas);
+  set('dash_perdidas',  perdidas);
+  set('dash_receita',   'R$ ' + fmtBRL(receita));
+
+  // ── Populate vendedor dropdown ────────────────────────────────────────────
+  const selVend = document.getElementById('dash_vendedor');
+  if (selVend) {
+    const current = selVend.value;
+    const vendedores = [...new Set(propostasCache.map(p => p.perfilNome).filter(Boolean))].sort();
+    selVend.innerHTML = '<option value="">Todos os Vendedores</option>';
+    vendedores.forEach(v => {
+      const opt = document.createElement('option');
+      opt.value = v;
+      opt.textContent = v;
+      selVend.appendChild(opt);
+    });
+    selVend.value = current;
+  }
+
+  // ── Por Unidade ───────────────────────────────────────────────────────────
+  const porFilial = {};
+  lista.forEach(p => {
+    const f = p.filial || 'N/A';
+    if (!porFilial[f]) porFilial[f] = { and: 0, fech: 0, perd: 0, receita: 0 };
+    if (p.status === 'andamento') porFilial[f].and++;
+    else if (p.status === 'fechada') { porFilial[f].fech++; porFilial[f].receita += calcReceitaProposta(p); }
+    else if (p.status === 'perdida') porFilial[f].perd++;
+  });
+
+  const tbFilial = document.getElementById('dash_tabela_unidade');
+  if (tbFilial) {
+    tbFilial.innerHTML = '';
+    const entries = Object.entries(porFilial).sort((a, b) => a[0].localeCompare(b[0]));
+    if (!entries.length) {
+      tbFilial.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#888;">Nenhum dado</td></tr>';
+    } else {
+      let rows = '';
+      entries.forEach(([filial, d]) => {
+        rows += `<tr>
+          <td>${esc(filial)}</td>
+          <td><span class="badge bg-andamento">${d.and}</span></td>
+          <td><span class="badge bg-fechada">${d.fech}</span></td>
+          <td><span class="badge bg-perdida">${d.perd}</span></td>
+          <td>${d.and + d.fech + d.perd}</td>
+          <td>R$ ${fmtBRL(d.receita)}</td>
+        </tr>`;
+      });
+      tbFilial.innerHTML = rows;
+    }
+  }
+
+  // ── Por Vendedor ──────────────────────────────────────────────────────────
+  const porVendedor = {};
+  lista.forEach(p => {
+    const v = p.perfilNome || 'N/A';
+    const f = p.filial     || 'N/A';
+    const key = v + '||' + f;
+    if (!porVendedor[key]) porVendedor[key] = { nome: v, filial: f, and: 0, fech: 0, perd: 0, receita: 0 };
+    if (p.status === 'andamento') porVendedor[key].and++;
+    else if (p.status === 'fechada') { porVendedor[key].fech++; porVendedor[key].receita += calcReceitaProposta(p); }
+    else if (p.status === 'perdida') porVendedor[key].perd++;
+  });
+
+  const tbVend = document.getElementById('dash_tabela_vendedor');
+  if (tbVend) {
+    tbVend.innerHTML = '';
+    const entries = Object.values(porVendedor).sort((a, b) => a.nome.localeCompare(b.nome));
+    if (!entries.length) {
+      tbVend.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888;">Nenhum dado</td></tr>';
+    } else {
+      let rows = '';
+      entries.forEach(d => {
+        rows += `<tr>
+          <td>${esc(d.nome)}</td>
+          <td>${esc(d.filial)}</td>
+          <td><span class="badge bg-andamento">${d.and}</span></td>
+          <td><span class="badge bg-fechada">${d.fech}</span></td>
+          <td><span class="badge bg-perdida">${d.perd}</span></td>
+          <td>${d.and + d.fech + d.perd}</td>
+          <td>R$ ${fmtBRL(d.receita)}</td>
+        </tr>`;
+      });
+      tbVend.innerHTML = rows;
+    }
+  }
+
+  // ── Por Tipo de Concreto (FCK) — apenas propostas fechadas ────────────────
+  const porFck = {};
+  lista.filter(p => p.status === 'fechada').forEach(p => {
+    (p.itens || []).forEach(it => {
+      const fck = it.fck || 'N/A';
+      if (!porFck[fck]) porFck[fck] = { volume: 0, receita: 0, qtd: new Set() };
+      porFck[fck].volume  += parseFloat(it.volume) || 0;
+      porFck[fck].receita += (parseFloat(it.volume) || 0) * (parseFloat(it.preco) || 0);
+      porFck[fck].qtd.add(p.id);
+    });
+  });
+
+  const tbFck = document.getElementById('dash_tabela_fck');
+  if (tbFck) {
+    tbFck.innerHTML = '';
+    const entries = Object.entries(porFck).sort((a, b) => b[1].receita - a[1].receita);
+    if (!entries.length) {
+      tbFck.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#888;">Nenhum dado</td></tr>';
+    } else {
+      let rows = '';
+      entries.forEach(([fck, d]) => {
+        rows += `<tr>
+          <td><strong>${esc(fck)}</strong></td>
+          <td>${fmtBRL(d.volume)} m³</td>
+          <td>R$ ${fmtBRL(d.receita)}</td>
+          <td>${d.qtd.size}</td>
+        </tr>`;
+      });
+      tbFck.innerHTML = rows;
+    }
+  }
+
+  // ── Motivos de Perda ──────────────────────────────────────────────────────
+  const perdidas_list = lista.filter(p => p.status === 'perdida');
+  const tbPerd = document.getElementById('dash_tabela_perdidas');
+  if (tbPerd) {
+    tbPerd.innerHTML = '';
+    if (!perdidas_list.length) {
+      tbPerd.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#888;">Nenhuma proposta perdida</td></tr>';
+    } else {
+      let rows = '';
+      perdidas_list.forEach(p => {
+        const cli = clientesCache.find(c => c.id === p.cliId);
+        const nomeCli = cli ? cli.nome : '—';
+        rows += `<tr>
+          <td>${esc(p.data || '')}</td>
+          <td>${esc(nomeCli)}</td>
+          <td>${esc(p.perfilNome || '—')}</td>
+          <td>${esc(p.filial || '—')}</td>
+          <td>${esc(p.motivoPerda || '—')}</td>
+        </tr>`;
+      });
+      tbPerd.innerHTML = rows;
+    }
+  }
+}
+
 // ─── Initialization ───────────────────────────────────────────────────────────
 async function inicializar() {
   const fcks = ["10 MPa","15 MPa","20 MPa","25 MPa","30 Mpa (HE)","30 Mpa","30 Mpa (PISO)","40 MPa"];
@@ -1361,6 +1588,8 @@ async function inicializar() {
 }
 
 // ─── Expose all functions to window (needed for inline onclick handlers) ──────
+window.alternarMotivPerda    = alternarMotivPerda;
+window.renderizarDashboard   = renderizarDashboard;
 window.fazerLogin            = fazerLogin;
 window.fazerLogout           = fazerLogout;
 window.abrirModalSenha       = abrirModalSenha;

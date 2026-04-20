@@ -164,6 +164,40 @@
       font-size: 0.9rem; margin-top: 6px;
     }
     .btn-google-disconnect:hover { background: #b71c1c; }
+
+    /* DASHBOARD */
+    #dashboard { display: none; }
+    #dashboard.active { display: block; }
+    .dash-kpi-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+    .dash-kpi {
+      flex: 1; min-width: 120px; background: white; border-radius: 8px;
+      padding: 14px 10px; text-align: center; border: 1px solid #ddd;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+    .dash-kpi .kpi-value { font-size: 2rem; font-weight: bold; line-height: 1.1; }
+    .dash-kpi .kpi-label { font-size: 0.72rem; color: #666; margin-top: 4px; text-transform: uppercase; }
+    .kpi-total   { color: var(--primary); }
+    .kpi-and     { color: var(--status-andamento); }
+    .kpi-fech    { color: var(--status-fechada); }
+    .kpi-perd    { color: var(--status-perdida); }
+    .dash-section-title {
+      font-size: 0.95rem; font-weight: bold; color: var(--primary);
+      border-left: 5px solid var(--primary); padding-left: 8px;
+      margin: 16px 0 8px;
+    }
+    .dash-table-wrap { overflow-x: auto; border-radius: 6px; border: 1px solid #ddd; margin-bottom: 10px; }
+    table.dash-table { width: 100%; border-collapse: collapse; min-width: 400px; }
+    table.dash-table th {
+      background: #e9ecef; padding: 8px 10px; text-align: left;
+      font-size: 0.75rem; border-bottom: 2px solid #ddd; color: #333;
+    }
+    table.dash-table td { padding: 8px 10px; border-bottom: 1px solid #eee; font-size: 0.82rem; }
+    table.dash-table tr:last-child td { border-bottom: none; }
+    .dash-filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+    .dash-filters select, .dash-filters input { flex: 1; min-width: 130px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
+    .btn-dash-refresh { background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 0.85rem; }
+    .btn-dash-refresh:hover { background: #1e4d38; }
+    .motivo-perda-wrap { display: none; }
   </style>
 </head>
 <body>
@@ -263,7 +297,7 @@
         <div class="col"><label>Perfil responsável</label><select id="selV" class="field"></select></div>
         <div class="col">
           <label>Status</label>
-          <select id="status" class="field">
+          <select id="status" class="field" onchange="alternarMotivPerda(this.value); document.getElementById('status2').value=this.value">
             <option value="andamento">🟡 Em Andamento</option>
             <option value="fechada">🟢 Fechada</option>
             <option value="perdida">🔴 Perdida</option>
@@ -331,7 +365,7 @@
         <div class="col"><label>Responsável Obra</label><input type="text" id="contato_obra" placeholder="A/C: Nome"></div>
         <div class="col">
           <label>Status</label>
-          <select id="status2" class="field" onchange="document.getElementById('status').value=this.value">
+          <select id="status2" class="field" onchange="document.getElementById('status').value=this.value; alternarMotivPerda(this.value)">
             <option value="andamento">🟡 Em Andamento</option>
             <option value="fechada">🟢 Fechada</option>
             <option value="perdida">🔴 Perdida</option>
@@ -339,6 +373,10 @@
         </div>
       </div>
       <textarea id="obs" class="field" rows="2" placeholder="Observações extras..."></textarea>
+      <div class="motivo-perda-wrap" id="motivo_perda_wrap">
+        <label style="color:#e74c3c;">Motivo da Perda</label>
+        <textarea id="motivo_perda" class="field" rows="2" placeholder="Descreva o motivo pelo qual a proposta foi perdida..."></textarea>
+      </div>
       <button class="btn" id="btn_prop" onclick="salvarP()">SALVAR PROPOSTA</button>
       <button class="btn" style="background:#444; margin-top:8px;" onclick="imprimir()">GERAR PDF / IMPRIMIR</button>
       <button class="btn" style="background:#28a745; margin-top:8px;" onclick="exportarPropostasExcel()">📥 EXPORTAR PROPOSTAS (EXCEL)</button>
@@ -549,6 +587,126 @@
     </div>
   </div>
 
+  <!-- DASHBOARD (gerente e administrador apenas) -->
+  <div id="dashboard" class="section no-print">
+    <div class="card">
+      <h3>📊 Dashboard de Desempenho</h3>
+
+      <div class="dash-filters">
+        <select id="dash_filial" onchange="renderizarDashboard()">
+          <option value="">Todas as Unidades</option>
+          <option>Divinopolis</option><option>Uberlandia</option><option>Manhuaçu</option>
+          <option>Betim</option><option>Itauna</option><option>Itatiaiuçu</option>
+          <option>Nova Serana</option><option>Bom Despacho</option><option>Igarapé</option><option>Abaeté</option>
+        </select>
+        <select id="dash_vendedor" onchange="renderizarDashboard()">
+          <option value="">Todos os Vendedores</option>
+        </select>
+        <select id="dash_periodo" onchange="renderizarDashboard()">
+          <option value="">Todos os períodos</option>
+          <option value="mes">Mês atual</option>
+          <option value="trimestre">Últimos 3 meses</option>
+          <option value="ano">Ano atual</option>
+        </select>
+        <button class="btn-dash-refresh" onclick="renderizarDashboard()">🔄 Atualizar</button>
+      </div>
+
+      <!-- KPI cards -->
+      <div class="dash-kpi-row">
+        <div class="dash-kpi">
+          <div class="kpi-value kpi-total" id="dash_total">0</div>
+          <div class="kpi-label">Total de Propostas</div>
+        </div>
+        <div class="dash-kpi">
+          <div class="kpi-value kpi-and" id="dash_andamento">0</div>
+          <div class="kpi-label">Em Andamento</div>
+        </div>
+        <div class="dash-kpi">
+          <div class="kpi-value kpi-fech" id="dash_fechadas">0</div>
+          <div class="kpi-label">Fechadas</div>
+        </div>
+        <div class="dash-kpi">
+          <div class="kpi-value kpi-perd" id="dash_perdidas">0</div>
+          <div class="kpi-label">Perdidas</div>
+        </div>
+        <div class="dash-kpi">
+          <div class="kpi-value kpi-fech" id="dash_receita" style="font-size:1.3rem">R$ 0</div>
+          <div class="kpi-label">Receita (Fechadas)</div>
+        </div>
+      </div>
+
+      <!-- Por Unidade -->
+      <div class="dash-section-title">🏭 Desempenho por Unidade</div>
+      <div class="dash-table-wrap">
+        <table class="dash-table">
+          <thead>
+            <tr>
+              <th>Unidade</th>
+              <th>Andamento</th>
+              <th>Fechadas</th>
+              <th>Perdidas</th>
+              <th>Total</th>
+              <th>Receita (R$)</th>
+            </tr>
+          </thead>
+          <tbody id="dash_tabela_unidade"></tbody>
+        </table>
+      </div>
+
+      <!-- Por Vendedor -->
+      <div class="dash-section-title">👤 Desempenho por Vendedor</div>
+      <div class="dash-table-wrap">
+        <table class="dash-table">
+          <thead>
+            <tr>
+              <th>Vendedor</th>
+              <th>Unidade</th>
+              <th>Andamento</th>
+              <th>Fechadas</th>
+              <th>Perdidas</th>
+              <th>Total</th>
+              <th>Receita (R$)</th>
+            </tr>
+          </thead>
+          <tbody id="dash_tabela_vendedor"></tbody>
+        </table>
+      </div>
+
+      <!-- Por Tipo de Concreto (FCK) -->
+      <div class="dash-section-title">🧱 Vendas por Tipo de Concreto (FCK)</div>
+      <div class="dash-table-wrap">
+        <table class="dash-table">
+          <thead>
+            <tr>
+              <th>FCK</th>
+              <th>Volume Total (m³)</th>
+              <th>Receita Total (R$)</th>
+              <th>Qtd. Propostas</th>
+            </tr>
+          </thead>
+          <tbody id="dash_tabela_fck"></tbody>
+        </table>
+      </div>
+
+      <!-- Motivos de Perda -->
+      <div class="dash-section-title">❌ Justificativas de Propostas Perdidas</div>
+      <div class="dash-table-wrap">
+        <table class="dash-table">
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Cliente</th>
+              <th>Vendedor</th>
+              <th>Unidade</th>
+              <th>Motivo da Perda</th>
+            </tr>
+          </thead>
+          <tbody id="dash_tabela_perdidas"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
   <!-- NAV BAR -->
   <nav class="nav-bar no-print">
     <button class="nav-item active" onclick="tab('agenda', this)">AGENDA</button>
@@ -556,6 +714,7 @@
     <button class="nav-item" onclick="tab('programacao', this)">PROGRAMAÇÃO</button>
     <button class="nav-item" onclick="tab('vendedor', this)">PERFIL</button>
     <button class="nav-item" id="nav-usuarios" onclick="tab('usuarios', this)" style="display:none">USUÁRIOS</button>
+    <button class="nav-item" id="nav-dashboard" onclick="tab('dashboard', this); renderizarDashboard()" style="display:none">DASHBOARD</button>
   </nav>
 
 </div><!-- #app -->
