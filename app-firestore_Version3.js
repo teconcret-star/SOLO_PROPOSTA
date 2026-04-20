@@ -1362,7 +1362,11 @@ function parseDateBR(s) {
   if (!s) return null;
   const parts = s.split('/');
   if (parts.length !== 3) return null;
-  return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+  const day = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10);
+  const year = parseInt(parts[2], 10);
+  if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
+  return new Date(year, month - 1, day);
 }
 
 function fmtBRL(v) {
@@ -1386,7 +1390,9 @@ function renderizarDashboard() {
 
   const agora = new Date();
   const inicioMes      = new Date(agora.getFullYear(), agora.getMonth(), 1);
-  const inicioTrimestre= new Date(agora.getFullYear(), agora.getMonth() - 2, 1);
+  const mesInicioTrim  = agora.getMonth() - 2;
+  const anoInicioTrim  = agora.getFullYear() + Math.floor(mesInicioTrim / 12);
+  const inicioTrimestre= new Date(anoInicioTrim, ((mesInicioTrim % 12) + 12) % 12, 1);
   const inicioAno      = new Date(agora.getFullYear(), 0, 1);
 
   // Build the full propostas list for admin (all units), gerente (own filial)
@@ -1455,8 +1461,9 @@ function renderizarDashboard() {
     if (!entries.length) {
       tbFilial.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#888;">Nenhum dado</td></tr>';
     } else {
+      let rows = '';
       entries.forEach(([filial, d]) => {
-        tbFilial.innerHTML += `<tr>
+        rows += `<tr>
           <td>${esc(filial)}</td>
           <td><span class="badge bg-andamento">${d.and}</span></td>
           <td><span class="badge bg-fechada">${d.fech}</span></td>
@@ -1465,6 +1472,7 @@ function renderizarDashboard() {
           <td>R$ ${fmtBRL(d.receita)}</td>
         </tr>`;
       });
+      tbFilial.innerHTML = rows;
     }
   }
 
@@ -1487,8 +1495,9 @@ function renderizarDashboard() {
     if (!entries.length) {
       tbVend.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888;">Nenhum dado</td></tr>';
     } else {
+      let rows = '';
       entries.forEach(d => {
-        tbVend.innerHTML += `<tr>
+        rows += `<tr>
           <td>${esc(d.nome)}</td>
           <td>${esc(d.filial)}</td>
           <td><span class="badge bg-andamento">${d.and}</span></td>
@@ -1498,6 +1507,7 @@ function renderizarDashboard() {
           <td>R$ ${fmtBRL(d.receita)}</td>
         </tr>`;
       });
+      tbVend.innerHTML = rows;
     }
   }
 
@@ -1520,14 +1530,16 @@ function renderizarDashboard() {
     if (!entries.length) {
       tbFck.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#888;">Nenhum dado</td></tr>';
     } else {
+      let rows = '';
       entries.forEach(([fck, d]) => {
-        tbFck.innerHTML += `<tr>
+        rows += `<tr>
           <td><strong>${esc(fck)}</strong></td>
           <td>${fmtBRL(d.volume)} m³</td>
           <td>R$ ${fmtBRL(d.receita)}</td>
           <td>${d.qtd.size}</td>
         </tr>`;
       });
+      tbFck.innerHTML = rows;
     }
   }
 
@@ -1539,10 +1551,11 @@ function renderizarDashboard() {
     if (!perdidas_list.length) {
       tbPerd.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#888;">Nenhuma proposta perdida</td></tr>';
     } else {
+      let rows = '';
       perdidas_list.forEach(p => {
         const cli = clientesCache.find(c => c.id === p.cliId);
         const nomeCli = cli ? cli.nome : '—';
-        tbPerd.innerHTML += `<tr>
+        rows += `<tr>
           <td>${esc(p.data || '')}</td>
           <td>${esc(nomeCli)}</td>
           <td>${esc(p.perfilNome || '—')}</td>
@@ -1550,6 +1563,7 @@ function renderizarDashboard() {
           <td>${esc(p.motivoPerda || '—')}</td>
         </tr>`;
       });
+      tbPerd.innerHTML = rows;
     }
   }
 }
