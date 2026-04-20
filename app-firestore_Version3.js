@@ -58,6 +58,11 @@ function esc(s) {
   return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+// ─── Proposal number formatting ───────────────────────────────────────────────
+function formatNumeroProposta(num) {
+  return num ? String(num).padStart(4, '0') : '—';
+}
+
 // ─── Role helpers ─────────────────────────────────────────────────────────────
 function isAdmin()    { return currentUser?.role === 'administrador'; }
 function isGerente()  { return currentUser?.role === 'gerente'; }
@@ -661,7 +666,7 @@ async function salvarP() {
     await addDoc(collection(db, "propostas"), obj);
     // Show the assigned number in the form
     const numEl = document.getElementById('display_numero_proposta');
-    if (numEl) numEl.value = String(numeroProposta).padStart(4, '0');
+    if (numEl) numEl.value = formatNumeroProposta(numeroProposta);
   } else {
     const refId = propostasCache[Number(idx)]?.id;
     if (!refId) return alert("Proposta não encontrada para atualizar.");
@@ -709,7 +714,7 @@ function filtrarPropostas() {
       const cli     = clientesCache.find(c => c.id === p.cliId);
       const nomeCli = cli ? cli.nome : "Excluído";
       l.innerHTML += `<tr>
-        <td>${p.numeroProposta ? String(p.numeroProposta).padStart(4, '0') : '—'}</td>
+        <td>${formatNumeroProposta(p.numeroProposta)}</td>
         <td>${p.data || ''}</td>
         <td>${nomeCli}</td>
         <td>${p.perfilNome || '—'}</td>
@@ -757,7 +762,7 @@ function editarP(i) {
 
   const numEl = document.getElementById('display_numero_proposta');
   if (numEl) {
-    numEl.value = p.numeroProposta ? String(p.numeroProposta).padStart(4, '0') : '—';
+    numEl.value = formatNumeroProposta(p.numeroProposta);
   }
 }
 
@@ -1027,7 +1032,7 @@ function imprimir() {
     // Proposal number: read from the display field populated by editarP, or leave blank for unsaved new proposals
     const numDisplay = document.getElementById('display_numero_proposta')?.value || '';
     const pNumeroEl = document.getElementById('p_numero');
-    if (pNumeroEl) pNumeroEl.innerText = numDisplay && numDisplay !== '—' ? numDisplay : '';
+    if (pNumeroEl) pNumeroEl.innerText = numDisplay !== '—' ? numDisplay : '';
 
     const tb = document.getElementById('p_tabela_itens');
     tb.innerHTML = '';
@@ -1080,7 +1085,7 @@ function exportarPropostasExcel() {
     const cli   = clientesCache.find(c => c.id === p.cliId);
     const nomeC = cli ? cli.nome : "Excluido";
     const total = (p.itens || []).reduce((acc, it) => acc + Number(it.preco || 0), 0).toFixed(2);
-    const nro   = p.numeroProposta ? String(p.numeroProposta).padStart(4, '0') : '';
+    const nro   = p.numeroProposta ? formatNumeroProposta(p.numeroProposta) : '';
     csv += `${nro};${p.data || ''};${nomeC};${p.perfilNome || ''};${p.filial || ''};${p.status || ''};${p.resp || ''};${total}\n`;
   });
   baixarCSV(csv, "propostas_solomix.csv");
