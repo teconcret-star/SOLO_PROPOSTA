@@ -11,7 +11,8 @@ import {
   setDoc,
   query,
   orderBy,
-  where
+  where,
+  runTransaction
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
 // ─── Firebase ────────────────────────────────────────────────────────────────
@@ -647,10 +648,26 @@ async function salvarP() {
 
   const idx = document.getElementById('idx_p')?.value || "-1";
   if (idx === "-1") {
+    // Generate next sequential proposal number atomically
+    const counterRef = doc(db, "config", "contadores");
+    let numeroProposta;
+    await runTransaction(db, async (transaction) => {
+      const snap = await transaction.get(counterRef);
+      const current = snap.exists() ? (snap.data().numeroProposta || 0) : 0;
+      numeroProposta = current + 1;
+      transaction.set(counterRef, { numeroProposta }, { merge: true });
+    });
+    obj.numeroProposta = numeroProposta;
     await addDoc(collection(db, "propostas"), obj);
+    // Show the assigned number in the form
+    const numEl = document.getElementById('display_numero_proposta');
+    if (numEl) numEl.value = String(numeroProposta).padStart(4, '0');
   } else {
     const refId = propostasCache[Number(idx)]?.id;
     if (!refId) return alert("Proposta não encontrada para atualizar.");
+    // Preserve the original proposal number on updates
+    const existing = propostasCache[Number(idx)];
+    if (existing?.numeroProposta) obj.numeroProposta = existing.numeroProposta;
     await updateDoc(doc(db, "propostas", refId), obj);
   }
 
@@ -692,6 +709,7 @@ function filtrarPropostas() {
       const cli     = clientesCache.find(c => c.id === p.cliId);
       const nomeCli = cli ? cli.nome : "Excluído";
       l.innerHTML += `<tr>
+        <td>${p.numeroProposta ? String(p.numeroProposta).padStart(4, '0') : '—'}</td>
         <td>${p.data || ''}</td>
         <td>${nomeCli}</td>
         <td>${p.perfilNome || '—'}</td>
@@ -736,6 +754,11 @@ function editarP(i) {
 
   document.getElementById('idx_p').value = i;
   document.getElementById('btn_prop').innerText = "ATUALIZAR";
+
+  const numEl = document.getElementById('display_numero_proposta');
+  if (numEl) {
+    numEl.value = p.numeroProposta ? String(p.numeroProposta).padStart(4, '0') : '—';
+  }
 }
 
 async function excluirP(id) {
@@ -1001,6 +1024,11 @@ function imprimir() {
     document.getElementById('p_obra').innerText       = `${cli.end || ''}, ${cli.num || ''} ${cli.comp ? '- ' + cli.comp : ''}`.toUpperCase();
     document.getElementById('p_responsavel').innerText= document.getElementById('contato_obra')?.value || "RESPONSÁVEL";
 
+    // Proposal number: read from the display field populated by editarP, or leave blank for unsaved new proposals
+    const numDisplay = document.getElementById('display_numero_proposta')?.value || '';
+    const pNumeroEl = document.getElementById('p_numero');
+    if (pNumeroEl) pNumeroEl.innerText = numDisplay && numDisplay !== '—' ? numDisplay : '';
+
     const tb = document.getElementById('p_tabela_itens');
     tb.innerHTML = '';
     itensProposta.forEach(it => {
@@ -1047,12 +1075,13 @@ function exportarClientesExcel() {
 
 function exportarPropostasExcel() {
   if (propostasCache.length === 0) return alert("Não há propostas cadastradas.");
-  let csv = "\ufeffData;Cliente;Perfil;Filial;Status;Responsavel;Valor_Total\n";
+  let csv = "\ufeffNro;Data;Cliente;Perfil;Filial;Status;Responsavel;Valor_Total\n";
   propostasCache.forEach(p => {
     const cli   = clientesCache.find(c => c.id === p.cliId);
     const nomeC = cli ? cli.nome : "Excluido";
     const total = (p.itens || []).reduce((acc, it) => acc + Number(it.preco || 0), 0).toFixed(2);
-    csv += `${p.data || ''};${nomeC};${p.perfilNome || ''};${p.filial || ''};${p.status || ''};${p.resp || ''};${total}\n`;
+    const nro   = p.numeroProposta ? String(p.numeroProposta).padStart(4, '0') : '';
+    csv += `${nro};${p.data || ''};${nomeC};${p.perfilNome || ''};${p.filial || ''};${p.status || ''};${p.resp || ''};${total}\n`;
   });
   baixarCSV(csv, "propostas_solomix.csv");
 }
