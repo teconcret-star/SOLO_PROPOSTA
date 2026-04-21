@@ -677,6 +677,7 @@ async function salvarP() {
   }
 
   await listarP();
+  popularSelectProposta();
   alert("Proposta salva!");
 }
 
@@ -770,6 +771,7 @@ async function excluirP(id) {
   if (confirm("Excluir proposta?")) {
     await deleteDoc(doc(db, "propostas", id));
     await listarP();
+    popularSelectProposta();
   }
 }
 
@@ -873,6 +875,55 @@ async function excluirProgramacao(id) {
 }
 
 async function carregarClienteProgramacao() {
+  atualizarExtratoProgramacao();
+}
+
+function popularSelectProposta() {
+  const sel = document.getElementById('selPropostaProg');
+  if (!sel) return;
+  const valorAtual = sel.value;
+  sel.innerHTML = '<option value="">— Selecionar Proposta —</option>';
+  propostasCache.forEach((p, i) => {
+    const cli = clientesCache.find(c => c.id === p.cliId);
+    const nomeCli = cli ? cli.nome : 'Excluído';
+    const num = p.numeroProposta ? formatNumeroProposta(p.numeroProposta) + ' - ' : '';
+    sel.innerHTML += `<option value="${i}">${num}${nomeCli} (${p.data || ''})</option>`;
+  });
+  if (valorAtual !== '') sel.value = valorAtual;
+}
+
+function carregarPropostaNaProgramacao(idx) {
+  if (idx === '' || idx === null || idx === undefined) return;
+  const p = propostasCache[Number(idx)];
+  if (!p) return;
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+
+  // Cliente
+  set('selProgC', p.cliId || '');
+
+  // Responsável da obra
+  if (p.resp) set('prog_contato_obra', p.resp);
+
+  // Observações
+  if (p.obs) set('prog_obs', p.obs);
+
+  // Valores dos itens (usa o primeiro item; volume = soma de todos)
+  if (p.itens && p.itens.length > 0) {
+    const totalVol = p.itens.reduce((acc, it) => acc + (parseFloat(it.volume) || 0), 0);
+    set('prog_volume', totalVol > 0 ? totalVol.toString() : '');
+    const item0 = p.itens[0];
+    if (item0.fck)   set('prog_fck',   item0.fck);
+    if (item0.brita) set('prog_brita', item0.brita);
+    if (item0.slump) set('prog_slp',   item0.slump);
+    if (item0.preco) set('prog_preco', Number(item0.preco).toFixed(2).replace('.', ','));
+  }
+
+  // Bomba e pagamento das configurações
+  if (p.cfg) {
+    if (p.cfg.b)   set('prog_bomba',    p.cfg.b);
+    if (p.cfg.prz) set('prog_pagamento', p.cfg.prz);
+  }
+
   atualizarExtratoProgramacao();
 }
 
@@ -1613,6 +1664,7 @@ async function inicializar() {
   await carregarVendedor();
   await atualizarC();
   await listarP();
+  popularSelectProposta();
   await listarProgramacoes();
   filtrarPerfis();
   atualizarExtratoProgramacao();
@@ -1659,6 +1711,8 @@ window.listarProgramacoes    = listarProgramacoes;
 window.editarProgramacao     = editarProgramacao;
 window.excluirProgramacao    = excluirProgramacao;
 window.carregarClienteProgramacao = carregarClienteProgramacao;
+window.popularSelectProposta = popularSelectProposta;
+window.carregarPropostaNaProgramacao = carregarPropostaNaProgramacao;
 window.atualizarExtratoProgramacao = atualizarExtratoProgramacao;
 window.gerarTxtProgramacao   = gerarTxtProgramacao;
 window.adicionarGoogleAgenda = adicionarGoogleAgenda;

@@ -418,6 +418,13 @@
       <h3>Programação</h3>
       <input type="hidden" id="idx_prog" value="-1">
 
+      <div class="field">
+        <label>Carregar dados de uma Proposta</label>
+        <select id="selPropostaProg" class="field" onchange="carregarPropostaNaProgramacao(this.value)">
+          <option value="">— Selecionar Proposta —</option>
+        </select>
+      </div>
+
       <div class="row">
         <div class="col"><label>Data do Evento</label><input type="date" id="prog_data_evento" class="field" oninput="atualizarExtratoProgramacao()"></div>
         <div class="col"><label>Horário do Evento</label><input type="time" id="prog_horario_evento" class="field" oninput="atualizarExtratoProgramacao()"></div>
