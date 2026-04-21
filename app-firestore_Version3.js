@@ -915,7 +915,8 @@ function carregarPropostaNaProgramacao(idx) {
     if (item0.fck)   set('prog_fck',   item0.fck);
     if (item0.brita) set('prog_brita', item0.brita);
     if (item0.slump) set('prog_slp',   item0.slump);
-    if (item0.preco) set('prog_preco', Number(item0.preco).toFixed(2).replace('.', ','));
+    const preco = parseFloat(item0.preco);
+    if (!isNaN(preco)) set('prog_preco', preco.toFixed(2).replace('.', ','));
   }
 
   // Bomba e pagamento das configurações
