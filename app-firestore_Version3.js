@@ -1664,18 +1664,29 @@ function renderizarDashboard() {
 }
 
 // ─── Empresa (dados da empresa por usuário) ───────────────────────────────────
+const EMPRESA_ADMIN_KEY = 'solomix_empresa_admin';
+
 async function carregarEmpresa() {
   if (!currentUser) return;
   try {
-    const snap = await getDoc(doc(db, 'empresas', currentUser.username));
-    if (snap.exists()) {
-      empresaCache = snap.data();
+    let data = null;
+    if (currentUser.username === ADMIN_USER) {
+      // Admin is a local-only user – persist in localStorage
+      const saved = localStorage.getItem(EMPRESA_ADMIN_KEY);
+      if (saved) data = JSON.parse(saved);
+    } else if (currentUser.id) {
+      // Regular Firestore user – company data is stored inside their usuarios doc
+      const snap = await getDoc(doc(db, 'usuarios', currentUser.id));
+      if (snap.exists() && snap.data().empresa) data = snap.data().empresa;
+    }
+    if (data) {
+      empresaCache = data;
       const setInputValue = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
-      setInputValue('emp_razao', empresaCache.razaoSocial);
-      setInputValue('emp_cnpj',  empresaCache.cnpj);
-      setInputValue('emp_end',   empresaCache.endereco);
-      setInputValue('emp_tel',   empresaCache.telefone);
-      setInputValue('emp_email', empresaCache.email);
+      setInputValue('emp_razao', data.razaoSocial);
+      setInputValue('emp_cnpj',  data.cnpj);
+      setInputValue('emp_end',   data.endereco);
+      setInputValue('emp_tel',   data.telefone);
+      setInputValue('emp_email', data.email);
     }
   } catch (e) {
     console.error('Erro ao carregar empresa:', e);
@@ -1693,7 +1704,15 @@ async function salvarEmpresa() {
   };
   if (!obj.razaoSocial) return alert('Informe a Razão Social da empresa!');
   try {
-    await setDoc(doc(db, 'empresas', currentUser.username), obj);
+    if (currentUser.username === ADMIN_USER) {
+      // Admin is a local-only user – no Firestore document to update
+      localStorage.setItem(EMPRESA_ADMIN_KEY, JSON.stringify(obj));
+    } else if (currentUser.id) {
+      // Regular Firestore user – embed company data in their existing usuarios doc
+      await updateDoc(doc(db, 'usuarios', currentUser.id), { empresa: obj });
+    } else {
+      throw new Error('ID de usuário não encontrado. Faça logout e login novamente.');
+    }
     empresaCache = obj;
     alert('Dados da empresa salvos com sucesso!');
   } catch (e) {
