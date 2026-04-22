@@ -38,6 +38,7 @@ let perfisCache = [];
 let propostasCache = [];
 let programacoesCache = [];
 let usuariosCache = [];
+let empresaCache = {};
 
 // ─── Google Calendar OAuth state ─────────────────────────────────────────────
 const GCAL_CLIENT_ID_KEY  = 'gcal_client_id';
@@ -1073,6 +1074,14 @@ function imprimir() {
     const vNome = document.getElementById('v_nome')?.value || '';
     const vCel  = document.getElementById('v_cel')?.value  || '';
 
+    // Empresa info in print header
+    const setElementText = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
+    setElementText('p_emp_razao', empresaCache.razaoSocial || '');
+    setElementText('p_emp_cnpj',  empresaCache.cnpj  ? 'CNPJ: ' + empresaCache.cnpj  : '');
+    setElementText('p_emp_end',   empresaCache.endereco || '');
+    setElementText('p_emp_tel',   empresaCache.telefone ? 'Tel: ' + empresaCache.telefone : '');
+    setElementText('p_emp_email', empresaCache.email || '');
+
     document.getElementById('p_cidade').innerText     = (document.getElementById('filial')?.value || currentUser.filial);
     document.getElementById('p_data').innerText       = new Date().toLocaleDateString('pt-BR');
     document.getElementById('p_cliente').innerText    = (cli.nome || '').toUpperCase();
@@ -1654,6 +1663,44 @@ function renderizarDashboard() {
   }
 }
 
+// ─── Empresa (dados da empresa por usuário) ───────────────────────────────────
+async function carregarEmpresa() {
+  if (!currentUser) return;
+  try {
+    const snap = await getDoc(doc(db, 'empresas', currentUser.username));
+    if (snap.exists()) {
+      empresaCache = snap.data();
+      const setInputValue = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+      setInputValue('emp_razao', empresaCache.razaoSocial);
+      setInputValue('emp_cnpj',  empresaCache.cnpj);
+      setInputValue('emp_end',   empresaCache.endereco);
+      setInputValue('emp_tel',   empresaCache.telefone);
+      setInputValue('emp_email', empresaCache.email);
+    }
+  } catch (e) {
+    console.error('Erro ao carregar empresa:', e);
+  }
+}
+
+async function salvarEmpresa() {
+  if (!currentUser) return alert('Sessão inválida. Faça login novamente.');
+  const obj = {
+    razaoSocial: (document.getElementById('emp_razao')?.value || '').trim(),
+    cnpj:        (document.getElementById('emp_cnpj')?.value  || '').trim(),
+    endereco:    (document.getElementById('emp_end')?.value   || '').trim(),
+    telefone:    (document.getElementById('emp_tel')?.value   || '').trim(),
+    email:       (document.getElementById('emp_email')?.value || '').trim()
+  };
+  if (!obj.razaoSocial) return alert('Informe a Razão Social da empresa!');
+  try {
+    await setDoc(doc(db, 'empresas', currentUser.username), obj);
+    empresaCache = obj;
+    alert('Dados da empresa salvos com sucesso!');
+  } catch (e) {
+    alert('Erro ao salvar empresa: ' + e.message);
+  }
+}
+
 // ─── Initialization ───────────────────────────────────────────────────────────
 async function inicializar() {
   const fcks = ["10 MPa","15 MPa","20 MPa","25 MPa","30 Mpa (HE)","30 Mpa","30 Mpa (PISO)","40 MPa"];
@@ -1663,6 +1710,7 @@ async function inicializar() {
   await carregarClientesCache();
   await carregarPerfisCache();
   await carregarVendedor();
+  await carregarEmpresa();
   await atualizarC();
   await listarP();
   popularSelectProposta();
@@ -1727,6 +1775,7 @@ window.salvarUsuario         = salvarUsuario;
 window.editarUsuario         = editarUsuario;
 window.excluirUsuario        = excluirUsuario;
 window.limparUsuario         = limparUsuario;
+window.salvarEmpresa         = salvarEmpresa;
 
 // ─── Startup ──────────────────────────────────────────────────────────────────
 window.onload = () => {
