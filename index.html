@@ -101,6 +101,7 @@
 
     #doc-impressao { display: none; }
     #doc-programacao { display: none; }
+    #doc-anexo { display: none; }
 
     .prog-box { background: white; border: 1px solid #ddd; border-radius: 6px; padding: 15px; margin-top: 10px; }
     .prog-title { font-size: 1rem; font-weight: bold; text-align: center; margin-bottom: 10px; color: var(--primary); text-transform: uppercase; }
@@ -120,6 +121,13 @@
       .no-print, .nav-bar { display: none !important; }
       #app .header-app { display: none !important; }
       #doc-impressao, #doc-programacao { display: block !important; padding: 10px; color: black; font-size: 11px; line-height: 1.3; }
+      #doc-anexo { display: block !important; padding: 10px; color: black; font-size: 11px; line-height: 1.5; page-break-before: always; }
+      .anexo-title { font-weight: bold; text-align: center; font-size: 12px; margin-bottom: 14px; text-transform: uppercase; }
+      .anexo-item { margin-bottom: 6px; text-align: justify; }
+      .anexo-sig-area { margin-top: 30px; }
+      .anexo-sig-line { margin-top: 40px; display: flex; justify-content: space-between; align-items: flex-end; }
+      .anexo-sig-box { width: 55%; border-top: 1px solid black; text-align: center; padding-top: 5px; font-size: 11px; }
+      .anexo-date-box { font-size: 11px; }
       .print-header { border-bottom: 3px solid #2d6a4f; padding-bottom: 14px; margin-bottom: 16px; }
       .print-header-inner { display: flex; align-items: flex-start; justify-content: space-between; }
       .print-logo { width: 130px; height: 130px; object-fit: contain; flex-shrink: 0; }
@@ -385,6 +393,7 @@
       </div>
       <button class="btn" id="btn_prop" onclick="salvarP()">SALVAR PROPOSTA</button>
       <button class="btn" style="background:#444; margin-top:8px;" onclick="imprimir()">GERAR PDF / IMPRIMIR</button>
+      <button class="btn" style="background:#25D366; margin-top:8px;" onclick="enviarWhatsApp()">📲 ENVIAR PELO WHATSAPP</button>
       <button class="btn" style="background:#28a745; margin-top:8px;" onclick="exportarPropostasExcel()">📥 EXPORTAR PROPOSTAS (EXCEL)</button>
 
       <div class="row" style="margin-top:12px;">
@@ -807,6 +816,50 @@
   <div class="signature-area">
     <div class="sig-box">Atenciosamente,<br><strong><span id="p_vend"></span></strong><br><span id="p_v_cel"></span></div>
     <div class="sig-box">Aceite do Cliente<br>Data: ___/___/___</div>
+  </div>
+</div>
+
+<!-- DOCUMENTO DE IMPRESSÃO - ANEXO (página separada) -->
+<div id="doc-anexo">
+  <div class="anexo-title">
+    ANEXO<br><br>
+    ORIENTAÇÕES PARA RECEBIMENTO, LANÇAMENTO, APLICAÇÃO E CURA DO CONCRETO,<br>
+    CONFORME NORMAS TÉCNICAS DA ABNT
+  </div>
+
+  <div class="anexo-item">1 - Verifique se o caminhão betoneira chegou lacrado, confira o lacre com o número especificado na Nota Fiscal de Remessa e assine-a confirmando o recebimento.</div>
+
+  <div class="anexo-item"><strong>2 - NÃO É PERMITIDA A ADIÇÃO DE ÁGUA NO CONCRETO POR CONTA DA OBRA. A CONSISTÊNCIA DO CONCRETO É DEFINIDA PELO OPERADOR DA BETONEIRA.</strong></div>
+
+  <div class="anexo-item">3 - Os concretos com excesso de água têm seu manuseio facilitado, porém resultam em produtos porosos que facilitam as infiltrações ocasionando vazamentos e, principalmente, redução da resistência.</div>
+
+  <div class="anexo-item">4 - Se precisar de um concreto com consistência de abatimento (slump) maior, ou seja, diferente do especificado na Nota Fiscal de Remessa, este deverá ser solicitado à Unidade.</div>
+
+  <div class="anexo-item">5 - O concreto é uma mistura cujo tempo para o seu manuseio é limitado (duas horas e meia no máximo, após a sua saída da Unidade). Reduza o tempo de concretagem, pois a espera para o lançamento pode resultar na utilização de um concreto em processo de endurecimento, dificultando o manuseio e comprometendo a qualidade.</div>
+
+  <div class="anexo-item">6 - Antes do início da concretagem, molhe as superfícies absorventes tais como: formas de madeira de laje, vigas e pilares, lajotas e cerâmicas. Use madeirite ou tábuas para andar sob o concreto espalhado.</div>
+
+  <div class="anexo-item">7 - Adense o concreto com vibradores de agulha ou socando energicamente, para que não se formem vazios na estrutura, ou seja, o concreto deve preencher todos os espaços existentes na forma. Em peças estreitas, como vigas, o uso de concreto mais plástico (com slump maior) e com pedra menor, facilita o preenchimento das formas.</div>
+
+  <div class="anexo-item">8 - Para dar acabamento na superfície, evite fazer o uso excessivo da desempenadeira ou espalhar cimento na superfície do concreto antes da cura, isso pode favorecer o aparecimento de fissuras.</div>
+
+  <div class="anexo-item">9 - A superfície concretada deve ser molhada logo após sua regularização e desempeno (processo de "cura" do concreto). A eficiência da molhagem depois da concretagem, evita o aparecimento de trincas de retração (fissuras em várias direções). A "cura" do concreto é responsabilidade do Cliente.</div>
+
+  <div class="anexo-item">10 - A cura da superfície deve ser prolongada por no mínimo 7 dias após a concretagem. Os meios mais simples e usuais são: sacos molhados de cimento ou estopa molhada protegendo a superfície concretada ou uma lâmina d'água com 2 cm aplicada sob a superfície. A cura é necessária mesmo em dias nublados, principalmente, se estiver ventando.</div>
+
+  <div class="anexo-item">11 - O concreto pode se tornar mais permeável e poroso quando há negligência ou ausência de cuidados na aplicação e/ou impermeabilização da estrutura. A cobertura do concreto com telhado é recomendada para melhorar a sua qualidade, durabilidade e integridade das ferragens e da estrutura. A contratada não garante que eventuais infiltrações e vazamentos ocorram.</div>
+
+  <div class="anexo-item">12 - Observe as dimensões das peças que serão concretadas, principalmente a espessura das lajes, pois variações nessas medidas podem ocasionar a necessidade de um volume de concreto maior que o planejado pela obra.</div>
+
+  <div class="anexo-item">13 - O Cliente deverá, antes do início do lançamento do concreto, conferir as condições estruturais do escoramento e travamento, com o objetivo de assegurar o cumprimento do projeto e garantir a segurança dos trabalhadores e equipamentos que serão utilizados na prestação de serviços de concretagem.</div>
+
+  <div class="anexo-item">14 – Questionamentos sobre atendimento e volumes, só serão aceitas no prazo máximo de 24 horas após o fornecimento do concreto.</div>
+
+  <div class="anexo-sig-area">
+    <div class="anexo-sig-line">
+      <div class="anexo-date-box">Li as orientações acima e estou de acordo: ___/___/___</div>
+      <div class="anexo-sig-box"><span id="anexo_nome_cliente"></span></div>
+    </div>
   </div>
 </div>
 

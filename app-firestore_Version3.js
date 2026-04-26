@@ -1124,10 +1124,30 @@ function imprimir() {
     document.getElementById('p_vend').innerText     = vNome.toUpperCase();
     document.getElementById('p_v_cel').innerText    = vCel;
 
+    const anexoNome = document.getElementById('anexo_nome_cliente');
+    if (anexoNome) anexoNome.innerText = (cli.nome || '').toUpperCase();
+
     setTimeout(() => window.print(), 100);
   } catch (e) {
     alert("Erro ao gerar impressão: " + e.message);
   }
+}
+
+function enviarWhatsApp() {
+  const cliId = document.getElementById('selC')?.value || '';
+  if (!cliId) { alert("Selecione o cliente!"); return; }
+  const cli = clientesCache.find(c => c.id === cliId) || {};
+  const telRaw = cli.tel || '';
+  if (!telRaw) { alert("O cliente não possui telefone cadastrado!"); return; }
+  const digitos = telRaw.replace(/\D/g, '');
+  const phone = digitos.startsWith('55') ? digitos : '55' + digitos;
+  const nomeCliente = (cli.nome || '').toUpperCase();
+  const numProposta = document.getElementById('display_numero_proposta')?.value || '';
+  const msg = encodeURIComponent(
+    `Olá ${nomeCliente}, segue a Proposta Comercial${numProposta ? ' Nº ' + numProposta : ''} da Solomix. ` +
+    `Por favor, entre em contato para mais informações.`
+  );
+  window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${msg}`, '_blank');
 }
 
 function exportarClientesExcel() {
@@ -1788,6 +1808,7 @@ window.salvarGcalClientId    = salvarGcalClientId;
 window.conectarGoogle        = conectarGoogle;
 window.desconectarGoogle     = desconectarGoogle;
 window.imprimir              = imprimir;
+window.enviarWhatsApp        = enviarWhatsApp;
 window.exportarClientesExcel = exportarClientesExcel;
 window.exportarPropostasExcel= exportarPropostasExcel;
 window.salvarUsuario         = salvarUsuario;
