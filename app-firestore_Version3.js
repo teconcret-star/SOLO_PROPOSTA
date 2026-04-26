@@ -1147,18 +1147,36 @@ function visualizarProposta() {
     const docImp    = document.getElementById('doc-impressao');
     const docAnexo  = document.getElementById('doc-anexo');
 
-    conteudo.innerHTML = '';
-    conteudo.appendChild(docImp.cloneNode(true));
+    const docImpClone = docImp.cloneNode(true);
+    docImpClone.style.display = 'block';
+
+    const docAnexoClone = docAnexo.cloneNode(true);
+    docAnexoClone.style.display = 'block';
 
     const sep = document.createElement('div');
     sep.style.cssText = 'border-top:2px dashed #ccc; margin:24px 0;';
+
+    conteudo.innerHTML = '';
+    conteudo.appendChild(docImpClone);
     conteudo.appendChild(sep);
-    conteudo.appendChild(docAnexo.cloneNode(true));
+    conteudo.appendChild(docAnexoClone);
 
     modal.style.display = 'flex';
     modal.scrollTop = 0;
   } catch (e) {
     alert("Erro ao gerar visualização: " + e.message);
+  }
+}
+
+function enviarWhatsAppComPDF() {
+  try {
+    if (!_preencherDocumentoImpressao()) return;
+    setTimeout(() => {
+      window.print();
+      enviarWhatsApp();
+    }, 100);
+  } catch (e) {
+    alert("Erro: " + e.message);
   }
 }
 
@@ -1850,6 +1868,7 @@ window.imprimir              = imprimir;
 window.visualizarProposta    = visualizarProposta;
 window.fecharPreviewProposta = fecharPreviewProposta;
 window.enviarWhatsApp        = enviarWhatsApp;
+window.enviarWhatsAppComPDF  = enviarWhatsAppComPDF;
 window.exportarClientesExcel = exportarClientesExcel;
 window.exportarPropostasExcel= exportarPropostasExcel;
 window.salvarUsuario         = salvarUsuario;
