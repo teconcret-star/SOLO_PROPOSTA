@@ -209,6 +209,48 @@
     .btn-dash-refresh { background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 0.85rem; }
     .btn-dash-refresh:hover { background: #1e4d38; }
     .motivo-perda-wrap { display: none; }
+
+    /* PREVIEW MODAL */
+    #modal-proposta-preview {
+      display: none; position: fixed; inset: 0; z-index: 9999;
+      background: rgba(0,0,0,0.85); overflow-y: auto;
+      flex-direction: column; align-items: center; padding: 10px;
+    }
+    #preview-inner {
+      width: 100%; max-width: 720px; background: white; border-radius: 8px;
+      overflow: hidden; margin: auto;
+    }
+    #preview-toolbar {
+      background: #2d6a4f; color: white; padding: 10px 14px;
+      display: flex; gap: 8px; flex-wrap: wrap; align-items: center; position: sticky; top: 0; z-index: 1;
+    }
+    #preview-toolbar strong { flex: 1; font-size: 0.95rem; }
+    .preview-btn {
+      border: none; border-radius: 4px; padding: 8px 14px; cursor: pointer;
+      font-weight: bold; font-size: 0.8rem; color: white;
+    }
+    #preview-conteudo {
+      padding: 20px; font-size: 11px; line-height: 1.4; color: black;
+    }
+    /* Apply print-like styles inside the preview */
+    #preview-conteudo .print-header { border-bottom: 3px solid #2d6a4f; padding-bottom: 14px; margin-bottom: 16px; }
+    #preview-conteudo .print-header-inner { display: flex; align-items: flex-start; justify-content: space-between; }
+    #preview-conteudo .print-logo { width: 100px; height: 100px; object-fit: contain; flex-shrink: 0; }
+    #preview-conteudo .print-empresa-info { text-align: right; font-size: 10px; line-height: 1.7; }
+    #preview-conteudo .print-emp-nome { font-size: 13px; font-weight: bold; color: #2d6a4f; margin-bottom: 2px; }
+    #preview-conteudo .print-table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+    #preview-conteudo .print-table th { background: #e9ecef; border: 1px solid #999; padding: 6px; font-weight: bold; }
+    #preview-conteudo .print-table td { border: 1px solid #999; padding: 6px; text-align: center; }
+    #preview-conteudo .section-title { font-weight: bold; text-decoration: underline; margin-top: 10px; text-transform: uppercase; background: #eee; padding: 2px 4px; display: block; }
+    #preview-conteudo .list-item { margin: 2px 0; }
+    #preview-conteudo .signature-area { margin-top: 30px; display: flex; justify-content: space-between; }
+    #preview-conteudo .sig-box { width: 45%; border-top: 1px solid black; text-align: center; padding-top: 5px; }
+    #preview-conteudo .anexo-title { font-weight: bold; text-align: center; font-size: 12px; margin-bottom: 14px; text-transform: uppercase; }
+    #preview-conteudo .anexo-item { margin-bottom: 6px; text-align: justify; }
+    #preview-conteudo .anexo-sig-area { margin-top: 30px; }
+    #preview-conteudo .anexo-sig-line { margin-top: 40px; display: flex; justify-content: space-between; align-items: flex-end; }
+    #preview-conteudo .anexo-sig-box { width: 55%; border-top: 1px solid black; text-align: center; padding-top: 5px; }
+    #preview-conteudo .anexo-date-box { font-size: 11px; }
   </style>
 </head>
 <body>
@@ -393,6 +435,7 @@
       </div>
       <button class="btn" id="btn_prop" onclick="salvarP()">SALVAR PROPOSTA</button>
       <button class="btn" style="background:#444; margin-top:8px;" onclick="imprimir()">GERAR PDF / IMPRIMIR</button>
+      <button class="btn" style="background:#0077cc; margin-top:8px;" onclick="visualizarProposta()">👁️ VISUALIZAR PROPOSTA</button>
       <button class="btn" style="background:#25D366; margin-top:8px;" onclick="enviarWhatsApp()">📲 ENVIAR PELO WHATSAPP</button>
       <button class="btn" style="background:#28a745; margin-top:8px;" onclick="exportarPropostasExcel()">📥 EXPORTAR PROPOSTAS (EXCEL)</button>
 
@@ -767,6 +810,19 @@
   </nav>
 
 </div><!-- #app -->
+
+<!-- MODAL DE PREVIEW DA PROPOSTA -->
+<div id="modal-proposta-preview" class="no-print">
+  <div id="preview-inner">
+    <div id="preview-toolbar">
+      <strong>👁️ Visualização da Proposta</strong>
+      <button class="preview-btn" style="background:#e74c3c;" onclick="fecharPreviewProposta()">✕ FECHAR</button>
+      <button class="preview-btn" style="background:#555;" onclick="imprimir()">🖨️ IMPRIMIR</button>
+      <button class="preview-btn" style="background:#25D366;" onclick="enviarWhatsApp()">📲 WHATSAPP</button>
+    </div>
+    <div id="preview-conteudo"></div>
+  </div>
+</div>
 
 <!-- DOCUMENTO DE IMPRESSÃO - PROPOSTA -->
 <div id="doc-impressao">
