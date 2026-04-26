@@ -1062,75 +1062,108 @@ async function excluirUsuario(id) {
 }
 
 // ─── Print / Export ───────────────────────────────────────────────────────────
+function _preencherDocumentoImpressao() {
+  const cliId = document.getElementById('selC')?.value || '';
+  if (!cliId || itensProposta.length === 0) {
+    alert("Selecione o cliente e adicione itens!");
+    return false;
+  }
+
+  const cli   = clientesCache.find(c => c.id === cliId) || {};
+  const vNome = document.getElementById('v_nome')?.value || '';
+  const vCel  = document.getElementById('v_cel')?.value  || '';
+
+  // Empresa info in print header
+  const setElementText = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
+  setElementText('p_emp_razao', empresaCache.razaoSocial || '');
+  setElementText('p_emp_cnpj',  empresaCache.cnpj  ? 'CNPJ: ' + empresaCache.cnpj  : '');
+  setElementText('p_emp_end',   empresaCache.endereco || '');
+  setElementText('p_emp_tel',   empresaCache.telefone ? 'Tel: ' + empresaCache.telefone : '');
+  setElementText('p_emp_email', empresaCache.email || '');
+
+  document.getElementById('p_cidade').innerText     = (document.getElementById('filial')?.value || currentUser.filial);
+  document.getElementById('p_data').innerText       = new Date().toLocaleDateString('pt-BR');
+  document.getElementById('p_cliente').innerText    = (cli.nome || '').toUpperCase();
+  document.getElementById('p_cnpj').innerText       = cli.doc || '';
+  document.getElementById('p_tel').innerText        = cli.tel || '';
+  document.getElementById('p_obra').innerText       = `${cli.end || ''}, ${cli.num || ''} ${cli.comp ? '- ' + cli.comp : ''}`.toUpperCase();
+  document.getElementById('p_responsavel').innerText= document.getElementById('contato_obra')?.value || "RESPONSÁVEL";
+
+  // Proposal number: read from the display field populated by editarP, or leave blank for unsaved new proposals
+  const numDisplay = document.getElementById('display_numero_proposta')?.value || '';
+  const pNumeroEl  = document.getElementById('p_numero');
+  if (pNumeroEl) pNumeroEl.innerText = numDisplay !== '—' ? numDisplay : '';
+
+  const tb = document.getElementById('p_tabela_itens');
+  tb.innerHTML = '';
+  itensProposta.forEach(it => {
+    tb.innerHTML += `<tr>
+      <td>${esc(it.volume)}</td>
+      <td>${esc(it.fck)}</td>
+      <td>${esc(it.brita)}</td>
+      <td>${esc(it.slump || '120±20')}</td>
+      <td>R$ ${esc(Number(it.preco).toFixed(2))}</td>
+    </tr>`;
+  });
+
+  const get = id => document.getElementById(id)?.value || '';
+  document.getElementById('pr_bomba').innerText    = get('cfg_bomba');
+  document.getElementById('pr_min_b').innerText    = get('cfg_min_b');
+  document.getElementById('pr_fibra').innerText    = get('cfg_fibra');
+  document.getElementById('pr_faltante').innerText = get('cfg_faltante');
+  document.getElementById('pr_perm').innerText     = get('cfg_perm');
+  document.getElementById('pr_h_uteis').innerText  = get('cfg_h_uteis');
+  document.getElementById('pr_h_sab').innerText    = get('cfg_h_sab');
+  document.getElementById('pr_h_dom').innerText    = get('cfg_h_dom');
+  document.getElementById('pr_min_dom').innerText  = get('cfg_min_dom');
+  document.getElementById('pr_rac').innerText      = get('cfg_rac');
+  document.getElementById('pr_roc').innerText      = get('cfg_roc');
+  document.getElementById('pr_prazo').innerText    = get('cfg_prazo');
+  document.getElementById('p_obs').innerText       = get('obs') || "A COMBINAR";
+  document.getElementById('p_vend').innerText      = vNome.toUpperCase();
+  document.getElementById('p_v_cel').innerText     = vCel;
+
+  const anexoNome = document.getElementById('anexo_nome_cliente');
+  if (anexoNome) anexoNome.innerText = (cli.nome || '').toUpperCase();
+
+  return true;
+}
+
 function imprimir() {
   try {
-    const cliId = document.getElementById('selC')?.value || '';
-    if (!cliId || itensProposta.length === 0) {
-      alert("Selecione o cliente e adicione itens!");
-      return;
-    }
-
-    const cli  = clientesCache.find(c => c.id === cliId) || {};
-    const vNome = document.getElementById('v_nome')?.value || '';
-    const vCel  = document.getElementById('v_cel')?.value  || '';
-
-    // Empresa info in print header
-    const setElementText = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
-    setElementText('p_emp_razao', empresaCache.razaoSocial || '');
-    setElementText('p_emp_cnpj',  empresaCache.cnpj  ? 'CNPJ: ' + empresaCache.cnpj  : '');
-    setElementText('p_emp_end',   empresaCache.endereco || '');
-    setElementText('p_emp_tel',   empresaCache.telefone ? 'Tel: ' + empresaCache.telefone : '');
-    setElementText('p_emp_email', empresaCache.email || '');
-
-    document.getElementById('p_cidade').innerText     = (document.getElementById('filial')?.value || currentUser.filial);
-    document.getElementById('p_data').innerText       = new Date().toLocaleDateString('pt-BR');
-    document.getElementById('p_cliente').innerText    = (cli.nome || '').toUpperCase();
-    document.getElementById('p_cnpj').innerText       = cli.doc || '';
-    document.getElementById('p_tel').innerText        = cli.tel || '';
-    document.getElementById('p_obra').innerText       = `${cli.end || ''}, ${cli.num || ''} ${cli.comp ? '- ' + cli.comp : ''}`.toUpperCase();
-    document.getElementById('p_responsavel').innerText= document.getElementById('contato_obra')?.value || "RESPONSÁVEL";
-
-    // Proposal number: read from the display field populated by editarP, or leave blank for unsaved new proposals
-    const numDisplay = document.getElementById('display_numero_proposta')?.value || '';
-    const pNumeroEl = document.getElementById('p_numero');
-    if (pNumeroEl) pNumeroEl.innerText = numDisplay !== '—' ? numDisplay : '';
-
-    const tb = document.getElementById('p_tabela_itens');
-    tb.innerHTML = '';
-    itensProposta.forEach(it => {
-      tb.innerHTML += `<tr>
-        <td>${esc(it.volume)}</td>
-        <td>${esc(it.fck)}</td>
-        <td>${esc(it.brita)}</td>
-        <td>${esc(it.slump || '120±20')}</td>
-        <td>R$ ${esc(Number(it.preco).toFixed(2))}</td>
-      </tr>`;
-    });
-
-    const get = id => document.getElementById(id)?.value || '';
-    document.getElementById('pr_bomba').innerText   = get('cfg_bomba');
-    document.getElementById('pr_min_b').innerText   = get('cfg_min_b');
-    document.getElementById('pr_fibra').innerText   = get('cfg_fibra');
-    document.getElementById('pr_faltante').innerText= get('cfg_faltante');
-    document.getElementById('pr_perm').innerText    = get('cfg_perm');
-    document.getElementById('pr_h_uteis').innerText = get('cfg_h_uteis');
-    document.getElementById('pr_h_sab').innerText   = get('cfg_h_sab');
-    document.getElementById('pr_h_dom').innerText   = get('cfg_h_dom');
-    document.getElementById('pr_min_dom').innerText = get('cfg_min_dom');
-    document.getElementById('pr_rac').innerText     = get('cfg_rac');
-    document.getElementById('pr_roc').innerText     = get('cfg_roc');
-    document.getElementById('pr_prazo').innerText   = get('cfg_prazo');
-    document.getElementById('p_obs').innerText      = get('obs') || "A COMBINAR";
-    document.getElementById('p_vend').innerText     = vNome.toUpperCase();
-    document.getElementById('p_v_cel').innerText    = vCel;
-
-    const anexoNome = document.getElementById('anexo_nome_cliente');
-    if (anexoNome) anexoNome.innerText = (cli.nome || '').toUpperCase();
-
+    if (!_preencherDocumentoImpressao()) return;
     setTimeout(() => window.print(), 100);
   } catch (e) {
     alert("Erro ao gerar impressão: " + e.message);
   }
+}
+
+function visualizarProposta() {
+  try {
+    if (!_preencherDocumentoImpressao()) return;
+
+    const modal     = document.getElementById('modal-proposta-preview');
+    const conteudo  = document.getElementById('preview-conteudo');
+    const docImp    = document.getElementById('doc-impressao');
+    const docAnexo  = document.getElementById('doc-anexo');
+
+    conteudo.innerHTML = '';
+    conteudo.appendChild(docImp.cloneNode(true));
+
+    const sep = document.createElement('div');
+    sep.style.cssText = 'border-top:2px dashed #ccc; margin:24px 0;';
+    conteudo.appendChild(sep);
+    conteudo.appendChild(docAnexo.cloneNode(true));
+
+    modal.style.display = 'flex';
+    modal.scrollTop = 0;
+  } catch (e) {
+    alert("Erro ao gerar visualização: " + e.message);
+  }
+}
+
+function fecharPreviewProposta() {
+  document.getElementById('modal-proposta-preview').style.display = 'none';
 }
 
 function enviarWhatsApp() {
@@ -1147,7 +1180,13 @@ function enviarWhatsApp() {
     `Olá ${nomeCliente}, segue a Proposta Comercial${numProposta ? ' Nº ' + numProposta : ''} da Solomix. ` +
     `Por favor, entre em contato para mais informações.`
   );
-  window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${msg}`, '_blank');
+  const link = document.createElement('a');
+  link.href = `https://wa.me/${phone}?text=${msg}`;
+  link.target = '_blank';
+  link.rel = 'noopener noreferrer';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 
 function exportarClientesExcel() {
@@ -1808,6 +1847,8 @@ window.salvarGcalClientId    = salvarGcalClientId;
 window.conectarGoogle        = conectarGoogle;
 window.desconectarGoogle     = desconectarGoogle;
 window.imprimir              = imprimir;
+window.visualizarProposta    = visualizarProposta;
+window.fecharPreviewProposta = fecharPreviewProposta;
 window.enviarWhatsApp        = enviarWhatsApp;
 window.exportarClientesExcel = exportarClientesExcel;
 window.exportarPropostasExcel= exportarPropostasExcel;
