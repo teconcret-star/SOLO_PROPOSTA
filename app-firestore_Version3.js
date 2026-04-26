@@ -1171,6 +1171,12 @@ function visualizarProposta() {
 function enviarWhatsAppComPDF() {
   try {
     if (!_preencherDocumentoImpressao()) return;
+    alert(
+      'Passo 1: A janela de impressão será aberta agora.\n' +
+      'Selecione "Salvar como PDF" (ou "Microsoft Print to PDF") para gerar o arquivo PDF da proposta.\n\n' +
+      'Após fechar a janela de impressão, o WhatsApp será aberto automaticamente para envio da mensagem.\n' +
+      'Você poderá então anexar o PDF salvo na conversa do WhatsApp.'
+    );
     setTimeout(() => {
       window.print();
       enviarWhatsApp();
