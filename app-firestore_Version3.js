@@ -1744,9 +1744,164 @@ function renderizarDashboard() {
       tbPerd.innerHTML = rows;
     }
   }
+
+  renderizarGraficoDashboard(lista);
 }
 
-// ─── Empresa (dados da empresa por usuário) ───────────────────────────────────
+// ─── Dashboard Export ─────────────────────────────────────────────────────────
+function exportarRelatorioDashboard() {
+  if (!isAdmin() && !isGerente()) return;
+
+  const filtroFilial   = document.getElementById('dash_filial')?.value   || '';
+  const filtroVendedor = document.getElementById('dash_vendedor')?.value || '';
+  const filtroPeriodo  = document.getElementById('dash_periodo')?.value  || '';
+
+  const agora = new Date();
+  const inicioMes       = new Date(agora.getFullYear(), agora.getMonth(), 1);
+  const mesInicioTrim   = agora.getMonth() - 2;
+  const anoInicioTrim   = agora.getFullYear() + (mesInicioTrim < 0 ? -1 : 0);
+  const inicioTrimestre = new Date(anoInicioTrim, ((mesInicioTrim % 12) + 12) % 12, 1);
+  const inicioAno       = new Date(agora.getFullYear(), 0, 1);
+
+  let lista = [...propostasCache];
+  if (filtroFilial)   lista = lista.filter(p => p.filial === filtroFilial);
+  if (filtroVendedor) lista = lista.filter(p => p.perfilNome === filtroVendedor);
+  if (filtroPeriodo) {
+    const inicio = filtroPeriodo === 'mes' ? inicioMes
+                 : filtroPeriodo === 'trimestre' ? inicioTrimestre
+                 : inicioAno;
+    lista = lista.filter(p => { const d = parseDateBR(p.data); return d && d >= inicio; });
+  }
+
+  if (!lista.length) return alert("Nenhuma proposta encontrada com os filtros selecionados.");
+
+  const csvField = v => String(v || '').replace(/;/g, ',').replace(/\n|\r/g, ' ');
+
+  let csv = "\ufeffNro;Data;Cliente;Vendedor;Unidade;Status;Motivo_Perda;Volume_m3;Valor_Total\n";
+  lista.forEach(p => {
+    const cli    = clientesCache.find(c => c.id === p.cliId);
+    const nomeC  = cli ? cli.nome : "Excluído";
+    const nro    = p.numeroProposta ? formatNumeroProposta(p.numeroProposta) : '';
+    const volume = (p.itens || []).reduce((acc, it) => acc + (parseFloat(it.volume) || 0), 0);
+    const total  = calcReceitaProposta(p);
+    csv += `${csvField(nro)};${csvField(p.data)};${csvField(nomeC)};${csvField(p.perfilNome)};${csvField(p.filial)};${csvField(p.status)};${csvField(p.motivoPerda)};${volume.toFixed(2)};${total.toFixed(2)}\n`;
+  });
+
+  const filtros = [
+    filtroFilial   ? `Filial_${filtroFilial}`     : '',
+    filtroVendedor ? `Vendedor_${filtroVendedor}` : '',
+    filtroPeriodo  ? `Periodo_${filtroPeriodo}`   : ''
+  ].filter(Boolean).join('_');
+  const sufixo = filtros ? `_${filtros}` : '_todos';
+  baixarCSV(csv, `relatorio_dashboard${sufixo}.csv`);
+}
+
+// ─── Dashboard Charts ─────────────────────────────────────────────────────────
+const _dashCharts = {};
+
+function destruirChart(id) {
+  if (_dashCharts[id]) { _dashCharts[id].destroy(); delete _dashCharts[id]; }
+}
+
+function renderizarGraficoDashboard(lista) {
+  if (typeof Chart === 'undefined') return;
+
+  // ── Gráfico de Status (Donut) ──────────────────────────────────────────────
+  destruirChart('status');
+  const ctxStatus = document.getElementById('dash_chart_status');
+  if (ctxStatus) {
+    const andamento = lista.filter(p => p.status === 'andamento').length;
+    const fechadas  = lista.filter(p => p.status === 'fechada').length;
+    const perdidas  = lista.filter(p => p.status === 'perdida').length;
+    _dashCharts['status'] = new Chart(ctxStatus, {
+      type: 'doughnut',
+      data: {
+        labels: ['Em Andamento', 'Fechadas', 'Perdidas'],
+        datasets: [{
+          data: [andamento, fechadas, perdidas],
+          backgroundColor: ['#f1c40f', '#27ae60', '#e74c3c'],
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } }
+      }
+    });
+  }
+
+  // ── Gráfico por Unidade (Barras Empilhadas) ────────────────────────────────
+  destruirChart('unidade');
+  const ctxUnidade = document.getElementById('dash_chart_unidade');
+  if (ctxUnidade) {
+    const porFilial = {};
+    lista.forEach(p => {
+      const f = p.filial || 'N/A';
+      if (!porFilial[f]) porFilial[f] = { and: 0, fech: 0, perd: 0 };
+      if (p.status === 'andamento') porFilial[f].and++;
+      else if (p.status === 'fechada')  porFilial[f].fech++;
+      else if (p.status === 'perdida')  porFilial[f].perd++;
+    });
+    const labels = Object.keys(porFilial).sort();
+    _dashCharts['unidade'] = new Chart(ctxUnidade, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          { label: 'Andamento', data: labels.map(f => porFilial[f].and),  backgroundColor: '#f1c40f' },
+          { label: 'Fechadas',  data: labels.map(f => porFilial[f].fech), backgroundColor: '#27ae60' },
+          { label: 'Perdidas',  data: labels.map(f => porFilial[f].perd), backgroundColor: '#e74c3c' }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        scales: { x: { stacked: true, ticks: { font: { size: 10 } } }, y: { stacked: true, beginAtZero: true } },
+        plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } }
+      }
+    });
+  }
+
+  // ── Evolução Mensal (últimos 6 meses) ─────────────────────────────────────
+  destruirChart('mensal');
+  const ctxMensal = document.getElementById('dash_chart_mensal');
+  if (ctxMensal) {
+    const agora   = new Date();
+    const meses   = [];
+    const labels  = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(agora.getFullYear(), agora.getMonth() - i, 1);
+      meses.push({ ano: d.getFullYear(), mes: d.getMonth() });
+      labels.push(d.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }));
+    }
+    const totais  = meses.map(() => 0);
+    const fech    = meses.map(() => 0);
+    lista.forEach(p => {
+      const d = parseDateBR(p.data);
+      if (!d) return;
+      const idx = meses.findIndex(m => m.ano === d.getFullYear() && m.mes === d.getMonth());
+      if (idx === -1) return;
+      totais[idx]++;
+      if (p.status === 'fechada') fech[idx]++;
+    });
+    _dashCharts['mensal'] = new Chart(ctxMensal, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          { label: 'Total',    data: totais, backgroundColor: 'rgba(45,106,79,0.25)', borderColor: '#2d6a4f', borderWidth: 2, type: 'line', tension: 0.3, fill: true },
+          { label: 'Fechadas', data: fech,   backgroundColor: '#27ae60' }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        scales: { y: { beginAtZero: true } },
+        plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } }
+      }
+    });
+  }
+}
+
+
 const EMPRESA_ADMIN_KEY = 'solomix_empresa_admin';
 
 async function carregarEmpresa() {
@@ -1827,6 +1982,7 @@ async function inicializar() {
 // ─── Expose all functions to window (needed for inline onclick handlers) ──────
 window.alternarMotivPerda    = alternarMotivPerda;
 window.renderizarDashboard   = renderizarDashboard;
+window.exportarRelatorioDashboard = exportarRelatorioDashboard;
 window.fazerLogin            = fazerLogin;
 window.fazerLogout           = fazerLogout;
 window.abrirModalSenha       = abrirModalSenha;

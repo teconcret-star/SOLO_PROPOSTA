@@ -208,7 +208,13 @@
     .dash-filters select, .dash-filters input { flex: 1; min-width: 130px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
     .btn-dash-refresh { background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 0.85rem; }
     .btn-dash-refresh:hover { background: #1e4d38; }
+    .btn-dash-export { background: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 0.85rem; }
+    .btn-dash-export:hover { background: #1e7e34; }
     .motivo-perda-wrap { display: none; }
+    .dash-charts-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+    .dash-chart-box { flex: 1; min-width: 260px; background: white; border: 1px solid #ddd; border-radius: 8px; padding: 14px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+    .dash-chart-box h4 { margin: 0 0 10px; font-size: 0.85rem; color: var(--primary); border-left: 4px solid var(--primary); padding-left: 8px; }
+    .dash-chart-canvas { position: relative; height: 220px; }
 
     /* PREVIEW MODAL */
     #modal-proposta-preview {
@@ -255,6 +261,7 @@
 </head>
 <body>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 
 <!-- ========== TELA DE LOGIN ========== -->
 <div id="tela-login">
@@ -702,6 +709,7 @@
           <option value="ano">Ano atual</option>
         </select>
         <button class="btn-dash-refresh" onclick="renderizarDashboard()">🔄 Atualizar</button>
+        <button class="btn-dash-export" onclick="exportarRelatorioDashboard()">📥 Exportar Relatório</button>
       </div>
 
       <!-- KPI cards -->
@@ -725,6 +733,22 @@
         <div class="dash-kpi">
           <div class="kpi-value kpi-fech" id="dash_receita" style="font-size:1.3rem">R$ 0</div>
           <div class="kpi-label">Receita (Fechadas)</div>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div class="dash-charts-row">
+        <div class="dash-chart-box">
+          <h4>📈 Status das Propostas</h4>
+          <div class="dash-chart-canvas"><canvas id="dash_chart_status"></canvas></div>
+        </div>
+        <div class="dash-chart-box">
+          <h4>🏭 Propostas por Unidade</h4>
+          <div class="dash-chart-canvas"><canvas id="dash_chart_unidade"></canvas></div>
+        </div>
+        <div class="dash-chart-box">
+          <h4>📅 Evolução Mensal (últimos 6 meses)</h4>
+          <div class="dash-chart-canvas"><canvas id="dash_chart_mensal"></canvas></div>
         </div>
       </div>
 
