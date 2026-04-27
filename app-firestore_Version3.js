@@ -1171,16 +1171,14 @@ function visualizarProposta() {
 function enviarWhatsAppComPDF() {
   try {
     if (!_preencherDocumentoImpressao()) return;
-    alert(
-      'Passo 1: A janela de impressão será aberta agora.\n' +
-      'Selecione "Salvar como PDF" (ou "Microsoft Print to PDF") para gerar o arquivo PDF da proposta.\n\n' +
-      'Após fechar a janela de impressão, o WhatsApp será aberto automaticamente para envio da mensagem.\n' +
-      'Você poderá então anexar o PDF salvo na conversa do WhatsApp.'
-    );
-    setTimeout(() => {
-      window.print();
-      enviarWhatsApp();
-    }, 100);
+    const handleAfterPrint = () => {
+      window.removeEventListener('afterprint', handleAfterPrint);
+      if (confirm('PDF gerado! Deseja abrir o WhatsApp agora para enviar a proposta?\n(Você poderá anexar o PDF salvo na conversa.)')) {
+        enviarWhatsApp();
+      }
+    };
+    window.addEventListener('afterprint', handleAfterPrint);
+    setTimeout(() => window.print(), 100);
   } catch (e) {
     alert("Erro: " + e.message);
   }
