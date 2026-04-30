@@ -1132,8 +1132,10 @@ async function carregarUsuarios() {
   const todos = [];
   snap.forEach(d => todos.push({ id: d.id, ...d.data() }));
 
-  // Admin não vê outros admins; Gerente vê só usuários da sua filial
-  if (isAdmin()) {
+  // Desenvolvedor (admin mestre) vê todos; Admin cadastrado não vê outros admins; Gerente vê só sua filial
+  if (currentUser.username === ADMIN_USER) {
+    usuariosCache = todos;
+  } else if (isAdmin()) {
     usuariosCache = todos.filter(u => u.role !== 'administrador');
   } else {
     usuariosCache = todos.filter(u => u.filial === currentUser.filial);
