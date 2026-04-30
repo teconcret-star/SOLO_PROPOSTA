@@ -1283,8 +1283,9 @@ async function confirmarOperacaoComSenha() {
     return;
   }
 
+  const idParaInativar = _pendingInactivateId;
   fecharModalConfirmarSenha();
-  if (_pendingInactivateId) await inativarUsuario(_pendingInactivateId);
+  if (idParaInativar) await inativarUsuario(idParaInativar);
 }
 
 async function inativarUsuario(id) {
