@@ -39,6 +39,10 @@ let propostasCache = [];
 let programacoesCache = [];
 let usuariosCache = [];
 let empresaCache = {};
+let obrasCache = [];
+let empresasCache = [];
+let propostaItensTemp = [];
+let _pendingInactivateId = null;
 
 // ─── Google Calendar OAuth state ─────────────────────────────────────────────
 const GCAL_CLIENT_ID_KEY  = 'gcal_client_id';
@@ -135,6 +139,10 @@ async function fazerLogin() {
     const userData = snap.docs[0].data();
     if (userData.senha !== senha) {
       if (erroEl) erroEl.textContent = 'Usuário ou senha incorretos.';
+      return;
+    }
+    if (userData.ativo === false) {
+      if (erroEl) erroEl.textContent = 'Usuário inativo. Entre em contato com o administrador.';
       return;
     }
     currentUser = {
@@ -351,30 +359,49 @@ async function carregarClientesCache() {
 }
 
 async function atualizarC() {
-  const s  = document.getElementById('selC');
-  const sp = document.getElementById('selProgC');
-  const l  = document.getElementById('listaC');
+  const s     = document.getElementById('selC');
+  const sp    = document.getElementById('selProgC');
+  const sCObra= document.getElementById('selCObra');
 
-  if (s)  s.innerHTML  = '<option value="">Selecionar Cliente...</option>';
-  if (sp) sp.innerHTML = '<option value="">Selecionar Cliente...</option>';
-  if (l)  l.innerHTML  = '';
+  if (s)      s.innerHTML      = '<option value="">Selecionar Cliente...</option>';
+  if (sp)     sp.innerHTML     = '<option value="">Selecionar Cliente...</option>';
+  if (sCObra) sCObra.innerHTML = '<option value="">Selecionar cliente...</option>';
 
   await carregarClientesCache();
 
   clientesCache.forEach((c, i) => {
-    if (s)  s.innerHTML  += `<option value="${c.id}">${c.nome}</option>`;
-    if (sp) sp.innerHTML += `<option value="${c.id}">${c.nome}</option>`;
-    if (l) {
+    if (s)      s.innerHTML      += `<option value="${c.id}">${esc(c.nome)}</option>`;
+    if (sp)     sp.innerHTML     += `<option value="${c.id}">${esc(c.nome)}</option>`;
+    if (sCObra) sCObra.innerHTML += `<option value="${c.id}">${esc(c.nome)}</option>`;
+  });
+
+  filtrarClientes();
+}
+
+function filtrarClientes() {
+  const filtro = (document.getElementById('filtroCliente')?.value || '').toLowerCase();
+  const l = document.getElementById('listaC');
+  if (!l) return;
+  l.innerHTML = '';
+  clientesCache
+    .filter(c => !filtro ||
+      (c.nome || '').toLowerCase().includes(filtro) ||
+      (c.doc  || '').toLowerCase().includes(filtro) ||
+      (c.tel  || '').toLowerCase().includes(filtro))
+    .forEach((c, i) => {
       l.innerHTML += `<tr>
         <td>${c.data || ''}</td>
-        <td>${c.nome || ''}</td>
+        <td>${esc(c.nome || '')}</td>
+        <td>${esc(c.doc || '')}</td>
+        <td>${esc(c.tel || '')}</td>
+        <td>${esc(c.end || '')}${c.num ? ', '+esc(c.num) : ''}${c.comp ? ' - '+esc(c.comp) : ''}</td>
+        <td>${esc(c.filial || '')}</td>
         <td class="actions">
           <span onclick="editarC(${i})" title="Editar">✏️</span>
           <span onclick="excluirC('${c.id}')" title="Excluir">🗑️</span>
         </td>
       </tr>`;
-    }
-  });
+    });
 }
 
 function editarC(i) {
@@ -475,21 +502,36 @@ function filtrarPerfis() {
   const tbody = document.getElementById('listaV');
   if (!tbody) return;
 
+  const vinculadoId = localStorage.getItem(PERFIL_VINCULADO_KEY);
   tbody.innerHTML = '';
   perfisCache
     .filter(p => !filtro || (p.nome || '').toLowerCase().includes(filtro) || (p.cel || '').toLowerCase().includes(filtro))
     .forEach((p, i) => {
-      const filialInfo = (isAdmin() && p.filial) ? ` <small style="color:#888">(${esc(p.filial)})</small>` : '';
-      const podeAcao = podeDeletarPerfil(p);
-      tbody.innerHTML += `<tr>
-        <td>${esc(p.nome || '')}${filialInfo}</td>
+      const filialInfo  = (isAdmin() && p.filial) ? ` <small style="color:#888">(${esc(p.filial)})</small>` : '';
+      const podeAcao    = podeDeletarPerfil(p);
+      const isVinculado = p.id === vinculadoId;
+      tbody.innerHTML += `<tr${isVinculado ? ' style="background:#e8f5e9;"' : ''}>
+        <td>${esc(p.nome || '')}${filialInfo}${isVinculado ? ' <small style="color:#27ae60">(✓ vinculado)</small>' : ''}</td>
         <td>${esc(p.cel || '')}</td>
         <td class="actions">
           ${podeAcao ? `<span onclick="editarPerfil(${i})" title="Editar">✏️</span>` : ''}
+          <span onclick="vincularPerfilAoLayout(${i})" title="Vincular ao layout" style="cursor:pointer">🔗</span>
           ${podeAcao ? `<span onclick="excluirPerfil('${esc(p.id)}')" title="Excluir">🗑️</span>` : ''}
         </td>
       </tr>`;
     });
+}
+
+function vincularPerfilAoLayout(i) {
+  const p = perfisCache[i];
+  if (!p) return;
+  localStorage.setItem(PERFIL_VINCULADO_KEY, p.id);
+  const vn = document.getElementById('v_nome');
+  const vc = document.getElementById('v_cel');
+  if (vn) vn.value = p.nome || '';
+  if (vc) vc.value = p.cel  || '';
+  filtrarPerfis();
+  alert(`Perfil "${p.nome}" vinculado ao layout da proposta!`);
 }
 
 function editarPerfil(i) {
@@ -564,13 +606,32 @@ async function carregarVendedor() {
 }
 
 // ─── Propostas ────────────────────────────────────────────────────────────────
-function atualizarDadosClienteProposta() {
+async function atualizarDadosClienteProposta() {
   const cliId = document.getElementById('selC')?.value;
   const cli   = clientesCache.find(c => c.id === cliId) || {};
   const cn    = document.getElementById('prop_cnpj');
   const ct    = document.getElementById('prop_tel');
   if (cn) cn.value = cli.doc || '';
   if (ct) ct.value = cli.tel || '';
+
+  // Load obras for this client
+  const selObra = document.getElementById('selObra');
+  if (selObra) {
+    selObra.innerHTML = '<option value="">— Selecionar Obra (opcional) —</option>';
+    if (cliId) {
+      try {
+        const snap = await getDocs(query(collection(db, 'obras'), where('clienteId', '==', cliId)));
+        snap.forEach(d => {
+          const o = d.data();
+          selObra.innerHTML += `<option value="${d.id}" data-end="${esc(o.end||'')} ${esc(o.num||'')} ${esc(o.comp||'')}">${esc(o.nome||'')}</option>`;
+        });
+      } catch(e) { console.error(e); }
+    }
+  }
+}
+
+function atualizarEnderecoObra() {
+  // The selected obra ID will be saved with the proposal
 }
 
 function addLinha() {
@@ -579,14 +640,41 @@ function addLinha() {
   const margem = parseFloat(document.getElementById('margem')?.value) || 0;
   if (volume <= 0) return alert("Insira o volume!");
   if (base   <= 0) return alert("Insira um valor base!");
-  itensProposta.push({
+  const item = {
     volume,
     fck:   document.getElementById('fck')?.value   || '',
     brita: document.getElementById('brita')?.value || '',
     slump: document.getElementById('slump')?.value || '120±20',
     preco: base * (1 + margem / 100)
-  });
+  };
+  const idxItem = parseInt(document.getElementById('idx_item')?.value || '-1');
+  if (idxItem >= 0) {
+    itensProposta[idxItem] = item;
+    document.getElementById('idx_item').value = '-1';
+    const btnAdd = document.getElementById('btn_add_item');
+    if (btnAdd) btnAdd.textContent = '+ ADICIONAR ITEM';
+  } else {
+    itensProposta.push(item);
+  }
+  document.getElementById('volume').value = '';
+  document.getElementById('vBase').value  = '';
+  document.getElementById('margem').value = '0';
   renderItens();
+}
+
+function editarItem(i) {
+  const it = itensProposta[i];
+  if (!it) return;
+  document.getElementById('volume').value = it.volume || '';
+  document.getElementById('fck').value    = it.fck    || '';
+  document.getElementById('brita').value  = it.brita  || '';
+  document.getElementById('slump').value  = it.slump  || '120±20';
+  const preco = parseFloat(it.preco) || 0;
+  document.getElementById('vBase').value  = preco.toFixed(2);
+  document.getElementById('margem').value = '0';
+  document.getElementById('idx_item').value = i;
+  const btnAdd = document.getElementById('btn_add_item');
+  if (btnAdd) btnAdd.textContent = '✏️ ATUALIZAR ITEM';
 }
 
 function renderItens() {
@@ -600,7 +688,10 @@ function renderItens() {
       <td>${esc(it.brita)}</td>
       <td>${esc(it.slump || '120±20')}</td>
       <td>R$ ${esc(Number(it.preco).toFixed(2))}</td>
-      <td onclick="removerItem(${i})" style="cursor:pointer">❌</td>
+      <td>
+        <span onclick="editarItem(${i})" style="cursor:pointer" title="Editar">✏️</span>
+        <span onclick="removerItem(${i})" style="cursor:pointer" title="Remover">❌</span>
+      </td>
     </tr>`;
   });
 }
@@ -651,6 +742,11 @@ async function salvarP() {
       md:  document.getElementById('cfg_min_dom')?.value || ''
     }
   };
+  const obraId  = document.getElementById('selObra')?.value || '';
+  const obraEl  = document.getElementById('selObra');
+  const obraTxt = obraEl?.options[obraEl.selectedIndex]?.text || '';
+  obj.obraId   = obraId;
+  obj.obraNome = (obraId && obraTxt !== '— Selecionar Obra (opcional) —') ? obraTxt : '';
 
   const idx = document.getElementById('idx_p')?.value || "-1";
   if (idx === "-1") {
@@ -713,13 +809,20 @@ function filtrarPropostas() {
       );
     })
     .forEach((p, i) => {
-      const cli     = clientesCache.find(c => c.id === p.cliId);
-      const nomeCli = cli ? cli.nome : "Excluído";
+      const cli      = clientesCache.find(c => c.id === p.cliId);
+      const nomeCli  = cli ? cli.nome : "Excluído";
+      const volTotal = (p.itens || []).reduce((acc, it) => acc + (parseFloat(it.volume) || 0), 0);
+      const valTotal = calcReceitaProposta(p);
+      const obraNome = p.obraNome || '—';
       l.innerHTML += `<tr>
         <td>${formatNumeroProposta(p.numeroProposta)}</td>
         <td>${p.data || ''}</td>
-        <td>${nomeCli}</td>
-        <td>${p.perfilNome || '—'}</td>
+        <td>${esc(nomeCli)}</td>
+        <td>${esc(obraNome)}</td>
+        <td>${esc(p.perfilNome || '—')}</td>
+        <td>${esc(p.filial || '—')}</td>
+        <td>${volTotal.toFixed(1)} m³</td>
+        <td>R$ ${fmtBRL(valTotal)}</td>
         <td><span class="badge bg-${p.status}">${p.status}</span></td>
         <td class="actions">
           <span onclick="editarP(${i})" title="Editar">✏️</span>
@@ -765,6 +868,14 @@ function editarP(i) {
   const numEl = document.getElementById('display_numero_proposta');
   if (numEl) {
     numEl.value = formatNumeroProposta(p.numeroProposta);
+  }
+
+  // Reload obras for this client then set the selected obra
+  if (document.getElementById('selObra')) {
+    atualizarDadosClienteProposta().then(() => {
+      const selObra = document.getElementById('selObra');
+      if (selObra && p.obraId) selObra.value = p.obraId;
+    });
   }
 }
 
@@ -908,11 +1019,33 @@ function carregarPropostaNaProgramacao(idx) {
   // Observações
   if (p.obs) set('prog_obs', p.obs);
 
-  // Valores dos itens (usa o primeiro item; volume = soma de todos)
-  if (p.itens && p.itens.length > 0) {
-    const totalVol = p.itens.reduce((acc, it) => acc + (parseFloat(it.volume) || 0), 0);
+  // Show all items
+  propostaItensTemp = p.itens || [];
+  const container = document.getElementById('prog_itens_container');
+  const lista = document.getElementById('prog_itens_lista');
+  if (container && lista && propostaItensTemp.length > 0) {
+    container.style.display = 'block';
+    lista.innerHTML = '';
+    propostaItensTemp.forEach((it, i) => {
+      const preco = parseFloat(it.preco) || 0;
+      lista.innerHTML += `<div style="background:white; border:1px solid #ddd; border-radius:4px; padding:10px; margin-top:8px; display:flex; flex-wrap:wrap; gap:6px; align-items:center;">
+        <span style="font-size:0.8rem;"><strong>Vol:</strong> ${esc(String(it.volume))} m³</span>
+        <span style="font-size:0.8rem;"><strong>FCK:</strong> ${esc(it.fck||'')}</span>
+        <span style="font-size:0.8rem;"><strong>Brita:</strong> ${esc(it.brita||'')}</span>
+        <span style="font-size:0.8rem;"><strong>Slump:</strong> ${esc(it.slump||'120±20')}</span>
+        <span style="font-size:0.8rem;"><strong>Valor:</strong> R$ ${preco.toFixed(2).replace('.',',')}</span>
+        <button class="btn" style="font-size:0.75rem; padding:6px 10px; width:auto; margin:0;" onclick="usarItemProgramacao(${i})">📋 Usar</button>
+      </div>`;
+    });
+  } else if (container) {
+    container.style.display = 'none';
+  }
+
+  // Load first item by default
+  if (propostaItensTemp.length > 0) {
+    const totalVol = propostaItensTemp.reduce((acc, it) => acc + (parseFloat(it.volume) || 0), 0);
     set('prog_volume', totalVol > 0 ? totalVol.toString() : '');
-    const item0 = p.itens[0];
+    const item0 = propostaItensTemp[0];
     if (item0.fck)   set('prog_fck',   item0.fck);
     if (item0.brita) set('prog_brita', item0.brita);
     if (item0.slump) set('prog_slp',   item0.slump);
@@ -926,6 +1059,19 @@ function carregarPropostaNaProgramacao(idx) {
     if (p.cfg.prz) set('prog_pagamento', p.cfg.prz);
   }
 
+  atualizarExtratoProgramacao();
+}
+
+function usarItemProgramacao(i) {
+  const item = propostaItensTemp[i];
+  if (!item) return;
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+  set('prog_volume', item.volume || '');
+  set('prog_fck',    item.fck    || '');
+  set('prog_brita',  item.brita  || '');
+  set('prog_slp',    item.slump  || '120±20');
+  const preco = parseFloat(item.preco) || 0;
+  set('prog_preco', preco.toFixed(2).replace('.', ','));
   atualizarExtratoProgramacao();
 }
 
@@ -973,22 +1119,32 @@ async function carregarUsuarios() {
   const todos = [];
   snap.forEach(d => todos.push({ id: d.id, ...d.data() }));
 
-  // Gerente vê só usuários da sua filial
-  usuariosCache = isAdmin() ? todos : todos.filter(u => u.filial === currentUser.filial);
+  // Admin não vê outros admins; Gerente vê só usuários da sua filial
+  if (isAdmin()) {
+    usuariosCache = todos.filter(u => u.role !== 'administrador');
+  } else {
+    usuariosCache = todos.filter(u => u.filial === currentUser.filial);
+  }
 
   const l = document.getElementById('listaU');
   if (!l) return;
   l.innerHTML = '';
   usuariosCache.forEach((u, i) => {
     const roleClass = `role-${u.role || 'consultor_comercial'}`;
-    l.innerHTML += `<tr>
-      <td>${u.nome || ''}</td>
-      <td>${u.username || ''}</td>
+    const ativo     = u.ativo !== false;
+    const rowStyle  = ativo ? '' : ' style="opacity:0.5;"';
+    l.innerHTML += `<tr${rowStyle}>
+      <td>${esc(u.nome || '')}</td>
+      <td>${esc(u.username || '')}</td>
       <td><span class="role-badge ${roleClass}">${labelRole(u.role)}</span></td>
-      <td>${u.filial || ''}</td>
+      <td>${esc(u.filial || '')}</td>
+      <td>${ativo ? '<span style="color:#27ae60">✅ Ativo</span>' : '<span style="color:#e74c3c">🚫 Inativo</span>'}</td>
       <td class="actions">
         <span onclick="editarUsuario(${i})" title="Editar">✏️</span>
-        <span onclick="excluirUsuario('${u.id}')" title="Excluir">🗑️</span>
+        ${ativo
+          ? `<span onclick="pedirSenhaParaInativar('${esc(u.id)}')" title="Tornar Inativo" style="cursor:pointer">🚫</span>`
+          : `<span onclick="reativarUsuario('${esc(u.id)}')" title="Reativar" style="cursor:pointer">✅</span>`
+        }
       </td>
     </tr>`;
   });
@@ -1059,6 +1215,183 @@ async function excluirUsuario(id) {
     await deleteDoc(doc(db, "usuarios", id));
     await carregarUsuarios();
   }
+}
+
+// ─── User Inactivation ────────────────────────────────────────────────────────
+function pedirSenhaParaInativar(id) {
+  _pendingInactivateId = id;
+  const senhaEl = document.getElementById('modal_conf_senha');
+  const erroEl  = document.getElementById('modal-conf-erro');
+  if (senhaEl) senhaEl.value = '';
+  if (erroEl)  erroEl.textContent = '';
+  const modal = document.getElementById('modal-confirmar-senha');
+  if (modal) modal.style.display = 'flex';
+}
+
+function fecharModalConfirmarSenha() {
+  const modal = document.getElementById('modal-confirmar-senha');
+  if (modal) modal.style.display = 'none';
+  _pendingInactivateId = null;
+}
+
+async function confirmarOperacaoComSenha() {
+  const senha  = (document.getElementById('modal_conf_senha')?.value || '').trim();
+  const erroEl = document.getElementById('modal-conf-erro');
+  if (!senha) { if (erroEl) erroEl.textContent = 'Informe sua senha.'; return; }
+
+  let senhaCorreta = false;
+  if (currentUser.username === ADMIN_USER) {
+    const adminSenha = localStorage.getItem(ADMIN_SENHA_KEY) || DEFAULT_ADMIN_SENHA;
+    senhaCorreta = senha === adminSenha;
+  } else if (currentUser.id) {
+    try {
+      const snap = await getDoc(doc(db, 'usuarios', currentUser.id));
+      if (snap.exists()) senhaCorreta = snap.data().senha === senha;
+    } catch (e) {
+      if (erroEl) erroEl.textContent = 'Erro ao verificar senha.';
+      return;
+    }
+  }
+
+  if (!senhaCorreta) {
+    if (erroEl) erroEl.textContent = 'Senha incorreta.';
+    return;
+  }
+
+  fecharModalConfirmarSenha();
+  if (_pendingInactivateId) await inativarUsuario(_pendingInactivateId);
+}
+
+async function inativarUsuario(id) {
+  try {
+    await updateDoc(doc(db, 'usuarios', id), { ativo: false });
+    await carregarUsuarios();
+    alert('Usuário tornado inativo com sucesso!');
+  } catch (e) {
+    alert('Erro ao inativar usuário: ' + e.message);
+  }
+}
+
+async function reativarUsuario(id) {
+  if (!confirm("Reativar este usuário?")) return;
+  try {
+    await updateDoc(doc(db, 'usuarios', id), { ativo: true });
+    await carregarUsuarios();
+    alert('Usuário reativado!');
+  } catch (e) {
+    alert('Erro ao reativar usuário: ' + e.message);
+  }
+}
+
+// ─── Obras ────────────────────────────────────────────────────────────────────
+async function autoCEPObra(v) {
+  const cep = (v || '').replace(/\D/g, "");
+  if (cep.length === 8) {
+    try {
+      const r = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+      const d = await r.json();
+      if (!d.erro) {
+        const endEl = document.getElementById('obra_end');
+        if (endEl) endEl.value = `${d.logradouro || ''}${d.bairro ? ', ' + d.bairro : ''}`;
+      }
+    } catch (e) { console.error(e); }
+  }
+}
+
+async function carregarObrasCliente(cliId) {
+  const l = document.getElementById('listaObras');
+  if (l) l.innerHTML = '';
+  obrasCache = [];
+  if (!cliId) return;
+  try {
+    const snap = await getDocs(query(collection(db, "obras"), where("clienteId", "==", cliId), orderBy("data", "desc")));
+    snap.forEach(d => obrasCache.push({ id: d.id, ...d.data() }));
+  } catch(e) { console.error(e); }
+  atualizarListaObras();
+}
+
+function atualizarListaObras() {
+  const l = document.getElementById('listaObras');
+  if (!l) return;
+  l.innerHTML = '';
+  if (!obrasCache.length) {
+    l.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#888;">Nenhuma obra cadastrada.</td></tr>';
+    return;
+  }
+  obrasCache.forEach((o, i) => {
+    l.innerHTML += `<tr>
+      <td>${esc(o.nome || '')}</td>
+      <td>${esc(o.end || '')}${o.num ? ', ' + esc(o.num) : ''}${o.comp ? ' - ' + esc(o.comp) : ''}</td>
+      <td>${esc(o.cep || '')}</td>
+      <td class="actions">
+        <span onclick="editarObra(${i})" title="Editar">✏️</span>
+        <span onclick="excluirObra('${esc(o.id)}')" title="Excluir">🗑️</span>
+      </td>
+    </tr>`;
+  });
+}
+
+function editarObra(i) {
+  const o = obrasCache[i];
+  if (!o) return;
+  document.getElementById('obra_nome').value = o.nome || '';
+  document.getElementById('obra_cep').value  = o.cep  || '';
+  document.getElementById('obra_end').value  = o.end  || '';
+  document.getElementById('obra_num').value  = o.num  || '';
+  document.getElementById('obra_comp').value = o.comp || '';
+  document.getElementById('idx_obra').value  = i;
+  document.getElementById('btn_obra').innerText = 'ATUALIZAR OBRA';
+}
+
+function limparObra() {
+  ['obra_nome','obra_cep','obra_end','obra_num','obra_comp'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('idx_obra').value = '-1';
+  document.getElementById('btn_obra').innerText = 'SALVAR OBRA';
+}
+
+async function salvarObra() {
+  const cliId = document.getElementById('selCObra')?.value || '';
+  if (!cliId) return alert("Selecione um cliente para a obra!");
+  const nome = (document.getElementById('obra_nome')?.value || '').trim();
+  if (!nome) return alert("Informe o nome/descrição da obra!");
+  const idx = document.getElementById('idx_obra')?.value || '-1';
+  const obj = {
+    clienteId: cliId,
+    nome,
+    cep:       document.getElementById('obra_cep')?.value  || '',
+    end:       document.getElementById('obra_end')?.value  || '',
+    num:       document.getElementById('obra_num')?.value  || '',
+    comp:      document.getElementById('obra_comp')?.value || '',
+    data:      new Date().toLocaleDateString('pt-BR'),
+    criadoPor: currentUser.username,
+    filial:    currentUser.filial || ''
+  };
+  try {
+    if (idx === '-1') {
+      await addDoc(collection(db, "obras"), obj);
+    } else {
+      const refId = obrasCache[Number(idx)]?.id;
+      if (!refId) return alert("Obra não encontrada para atualizar.");
+      await updateDoc(doc(db, "obras", refId), obj);
+    }
+    await carregarObrasCliente(cliId);
+    limparObra();
+    alert("Obra salva!");
+  } catch (err) {
+    alert("Erro ao salvar obra: " + err.message);
+  }
+}
+
+async function excluirObra(id) {
+  if (!confirm("Excluir obra?")) return;
+  try {
+    await deleteDoc(doc(db, "obras", id));
+    const cliId = document.getElementById('selCObra')?.value || '';
+    await carregarObrasCliente(cliId);
+  } catch(e) { alert("Erro ao excluir obra: " + e.message); }
 }
 
 // ─── Print / Export ───────────────────────────────────────────────────────────
@@ -1903,56 +2236,164 @@ function renderizarGraficoDashboard(lista) {
 
 
 const EMPRESA_ADMIN_KEY = 'solomix_empresa_admin';
+const PERFIL_VINCULADO_KEY = 'solomix_perfil_vinculado';
 
 async function carregarEmpresa() {
+  // Load empresaCache from the first/linked company for print purposes
+  await carregarEmpresas();
+  if (empresasCache.length > 0 && !empresaCache.razaoSocial) {
+    const e = empresasCache[0];
+    empresaCache = {
+      razaoSocial: e.razaoSocial,
+      cnpj:        e.cnpj,
+      endereco:    e.endereco,
+      telefone:    e.telefone,
+      email:       e.email
+    };
+  }
+  // Populate form with first company data if only one exists
+  if (empresasCache.length === 1) {
+    const e = empresasCache[0];
+    const setInputValue = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+    setInputValue('emp_razao', e.razaoSocial);
+    setInputValue('emp_cnpj',  e.cnpj);
+    setInputValue('emp_end',   e.endereco);
+    setInputValue('emp_tel',   e.telefone);
+    setInputValue('emp_email', e.email);
+  }
+}
+
+async function carregarEmpresas() {
+  empresasCache = [];
   if (!currentUser) return;
   try {
-    let data = null;
     if (currentUser.username === ADMIN_USER) {
-      // Admin is a local-only user – persist in localStorage
       const saved = localStorage.getItem(EMPRESA_ADMIN_KEY);
-      if (saved) data = JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          empresasCache = parsed;
+        } else if (parsed && parsed.razaoSocial) {
+          // Migrate old single-company format
+          empresasCache = [{ ...parsed, id: 'local_0' }];
+          localStorage.setItem(EMPRESA_ADMIN_KEY, JSON.stringify(empresasCache));
+        }
+      }
     } else if (currentUser.id) {
-      // Regular Firestore user – company data is stored inside their usuarios doc
-      const snap = await getDoc(doc(db, 'usuarios', currentUser.id));
-      if (snap.exists() && snap.data().empresa) data = snap.data().empresa;
+      const snap = await getDocs(query(collection(db, 'empresas'), where('userId', '==', currentUser.username)));
+      snap.forEach(d => empresasCache.push({ id: d.id, ...d.data() }));
     }
-    if (data) {
-      empresaCache = data;
-      const setInputValue = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
-      setInputValue('emp_razao', data.razaoSocial);
-      setInputValue('emp_cnpj',  data.cnpj);
-      setInputValue('emp_end',   data.endereco);
-      setInputValue('emp_tel',   data.telefone);
-      setInputValue('emp_email', data.email);
-    }
-  } catch (e) {
-    console.error('Erro ao carregar empresa:', e);
+  } catch(e) { console.error('Erro ao carregar empresas:', e); }
+  atualizarListaEmpresas();
+}
+
+function atualizarListaEmpresas() {
+  const l = document.getElementById('listaEmpresas');
+  if (!l) return;
+  l.innerHTML = '';
+  if (!empresasCache.length) {
+    l.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#888;">Nenhuma empresa cadastrada.</td></tr>';
+    return;
   }
+  empresasCache.forEach((e, i) => {
+    l.innerHTML += `<tr>
+      <td>${esc(e.razaoSocial || '')}</td>
+      <td>${esc(e.cnpj || '')}</td>
+      <td>${esc(e.telefone || '')}</td>
+      <td>${esc(e.email || '')}</td>
+      <td class="actions">
+        <span onclick="editarEmpresa('${esc(e.id)}')" title="Editar">✏️</span>
+        <span onclick="vincularEmpresaAoLayout('${esc(e.id)}')" title="Vincular ao layout" style="cursor:pointer">🔗</span>
+        <span onclick="excluirEmpresa('${esc(e.id)}')" title="Excluir">🗑️</span>
+      </td>
+    </tr>`;
+  });
+}
+
+function editarEmpresa(id) {
+  const e = empresasCache.find(x => x.id === id);
+  if (!e) return;
+  const set = (elId, val) => { const el = document.getElementById(elId); if (el) el.value = val || ''; };
+  set('emp_razao', e.razaoSocial);
+  set('emp_cnpj',  e.cnpj);
+  set('emp_end',   e.endereco);
+  set('emp_tel',   e.telefone);
+  set('emp_email', e.email);
+  const idxEl = document.getElementById('idx_empresa');
+  if (idxEl) idxEl.value = e.id;
+}
+
+async function excluirEmpresa(id) {
+  if (!confirm("Excluir empresa?")) return;
+  try {
+    if (currentUser.username === ADMIN_USER) {
+      const all = Array.isArray(empresasCache) ? empresasCache.filter(e => e.id !== id) : [];
+      localStorage.setItem(EMPRESA_ADMIN_KEY, JSON.stringify(all));
+    } else {
+      await deleteDoc(doc(db, 'empresas', id));
+    }
+    await carregarEmpresas();
+  } catch(e) { alert('Erro ao excluir empresa: ' + e.message); }
+}
+
+function vincularEmpresaAoLayout(id) {
+  const e = empresasCache.find(x => x.id === id);
+  if (!e) return;
+  empresaCache = {
+    razaoSocial: e.razaoSocial,
+    cnpj:        e.cnpj,
+    endereco:    e.endereco,
+    telefone:    e.telefone,
+    email:       e.email
+  };
+  alert(`Empresa "${e.razaoSocial}" vinculada ao layout da proposta!`);
+}
+
+function limparEmpresaForm() {
+  ['emp_razao','emp_cnpj','emp_end','emp_tel','emp_email'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  const idxEl = document.getElementById('idx_empresa');
+  if (idxEl) idxEl.value = '-1';
 }
 
 async function salvarEmpresa() {
   if (!currentUser) return alert('Sessão inválida. Faça login novamente.');
+  const idx = document.getElementById('idx_empresa')?.value || '-1';
   const obj = {
     razaoSocial: (document.getElementById('emp_razao')?.value || '').trim(),
     cnpj:        (document.getElementById('emp_cnpj')?.value  || '').trim(),
     endereco:    (document.getElementById('emp_end')?.value   || '').trim(),
     telefone:    (document.getElementById('emp_tel')?.value   || '').trim(),
-    email:       (document.getElementById('emp_email')?.value || '').trim()
+    email:       (document.getElementById('emp_email')?.value || '').trim(),
+    userId:      currentUser.username,
+    data:        new Date().toLocaleDateString('pt-BR')
   };
   if (!obj.razaoSocial) return alert('Informe a Razão Social da empresa!');
   try {
     if (currentUser.username === ADMIN_USER) {
-      // Admin is a local-only user – no Firestore document to update
-      localStorage.setItem(EMPRESA_ADMIN_KEY, JSON.stringify(obj));
+      const all = Array.isArray(empresasCache) ? [...empresasCache] : [];
+      if (idx === '-1') {
+        obj.id = Date.now().toString();
+        all.push(obj);
+      } else {
+        const found = all.findIndex(e => e.id === idx);
+        if (found >= 0) { obj.id = idx; all[found] = obj; }
+        else { obj.id = Date.now().toString(); all.push(obj); }
+      }
+      localStorage.setItem(EMPRESA_ADMIN_KEY, JSON.stringify(all));
     } else if (currentUser.id) {
-      // Regular Firestore user – embed company data in their existing usuarios doc
-      await updateDoc(doc(db, 'usuarios', currentUser.id), { empresa: obj });
+      if (idx === '-1') {
+        await addDoc(collection(db, 'empresas'), obj);
+      } else {
+        await updateDoc(doc(db, 'empresas', idx), obj);
+      }
     } else {
-      throw new Error('ID de usuário não encontrado. Faça logout e login novamente.');
+      throw new Error('ID de usuário não encontrado.');
     }
-    empresaCache = obj;
-    alert('Dados da empresa salvos com sucesso!');
+    limparEmpresaForm();
+    await carregarEmpresas();
+    alert('Dados da empresa salvos!');
   } catch (e) {
     alert('Erro ao salvar empresa: ' + e.message);
   }
@@ -2038,6 +2479,29 @@ window.editarUsuario         = editarUsuario;
 window.excluirUsuario        = excluirUsuario;
 window.limparUsuario         = limparUsuario;
 window.salvarEmpresa         = salvarEmpresa;
+window.carregarEmpresas      = carregarEmpresas;
+window.atualizarListaEmpresas= atualizarListaEmpresas;
+window.editarEmpresa         = editarEmpresa;
+window.excluirEmpresa        = excluirEmpresa;
+window.vincularEmpresaAoLayout = vincularEmpresaAoLayout;
+window.limparEmpresaForm     = limparEmpresaForm;
+window.pedirSenhaParaInativar= pedirSenhaParaInativar;
+window.fecharModalConfirmarSenha = fecharModalConfirmarSenha;
+window.confirmarOperacaoComSenha = confirmarOperacaoComSenha;
+window.inativarUsuario       = inativarUsuario;
+window.reativarUsuario       = reativarUsuario;
+window.autoCEPObra           = autoCEPObra;
+window.carregarObrasCliente  = carregarObrasCliente;
+window.atualizarListaObras   = atualizarListaObras;
+window.editarObra            = editarObra;
+window.limparObra            = limparObra;
+window.salvarObra            = salvarObra;
+window.excluirObra           = excluirObra;
+window.filtrarClientes       = filtrarClientes;
+window.atualizarEnderecoObra = atualizarEnderecoObra;
+window.editarItem            = editarItem;
+window.usarItemProgramacao   = usarItemProgramacao;
+window.vincularPerfilAoLayout = vincularPerfilAoLayout;
 
 // ─── Startup ──────────────────────────────────────────────────────────────────
 window.onload = () => {
