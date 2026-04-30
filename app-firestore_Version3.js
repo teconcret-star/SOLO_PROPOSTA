@@ -631,7 +631,13 @@ async function atualizarDadosClienteProposta() {
 }
 
 function atualizarEnderecoObra() {
-  // The selected obra ID will be saved with the proposal
+  const selObra = document.getElementById('selObra');
+  if (!selObra) return;
+  const opt = selObra.options[selObra.selectedIndex];
+  if (opt && opt.dataset.end) {
+    const endEl = document.getElementById('prop_end_obra');
+    if (endEl) endEl.textContent = opt.dataset.end.trim();
+  }
 }
 
 function addLinha() {
@@ -648,7 +654,7 @@ function addLinha() {
     preco: base * (1 + margem / 100)
   };
   const idxItem = parseInt(document.getElementById('idx_item')?.value || '-1');
-  if (idxItem >= 0) {
+  if (idxItem >= 0 && idxItem < itensProposta.length) {
     itensProposta[idxItem] = item;
     document.getElementById('idx_item').value = '-1';
     const btnAdd = document.getElementById('btn_add_item');
@@ -2374,12 +2380,12 @@ async function salvarEmpresa() {
     if (currentUser.username === ADMIN_USER) {
       const all = Array.isArray(empresasCache) ? [...empresasCache] : [];
       if (idx === '-1') {
-        obj.id = Date.now().toString();
+        obj.id = `${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
         all.push(obj);
       } else {
         const found = all.findIndex(e => e.id === idx);
         if (found >= 0) { obj.id = idx; all[found] = obj; }
-        else { obj.id = Date.now().toString(); all.push(obj); }
+        else { obj.id = `${Date.now()}_${Math.random().toString(36).slice(2,7)}`; all.push(obj); }
       }
       localStorage.setItem(EMPRESA_ADMIN_KEY, JSON.stringify(all));
     } else if (currentUser.id) {
