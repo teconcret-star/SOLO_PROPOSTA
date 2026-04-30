@@ -44,6 +44,10 @@ let empresasCache = [];
 let propostaItensTemp = [];
 let _pendingInactivateId = null;
 
+function generateLocalId() {
+  return `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+}
+
 // ─── Google Calendar OAuth state ─────────────────────────────────────────────
 const GCAL_CLIENT_ID_KEY  = 'gcal_client_id';
 const GCAL_TIMEZONE       = 'America/Sao_Paulo';
@@ -1148,8 +1152,8 @@ async function carregarUsuarios() {
       <td class="actions">
         <span onclick="editarUsuario(${i})" title="Editar">✏️</span>
         ${ativo
-          ? `<span onclick="pedirSenhaParaInativar('${esc(u.id)}')" title="Tornar Inativo" style="cursor:pointer">🚫</span>`
-          : `<span onclick="reativarUsuario('${esc(u.id)}')" title="Reativar" style="cursor:pointer">✅</span>`
+          ? `<span onclick="pedirSenhaParaInativar('${esc(u.id)}')" title="Tornar Inativo" aria-label="Tornar Inativo" style="cursor:pointer">🚫</span>`
+          : `<span onclick="reativarUsuario('${esc(u.id)}')" title="Reativar" aria-label="Reativar" style="cursor:pointer">✅</span>`
         }
       </td>
     </tr>`;
@@ -2242,6 +2246,7 @@ function renderizarGraficoDashboard(lista) {
 
 
 const EMPRESA_ADMIN_KEY = 'solomix_empresa_admin';
+const EMPRESA_ADMIN_MIGRATED_ID = 'legacy_migrated_company';
 const PERFIL_VINCULADO_KEY = 'solomix_perfil_vinculado';
 
 async function carregarEmpresa() {
@@ -2281,7 +2286,7 @@ async function carregarEmpresas() {
           empresasCache = parsed;
         } else if (parsed && parsed.razaoSocial) {
           // Migrate old single-company format
-          empresasCache = [{ ...parsed, id: 'local_0' }];
+          empresasCache = [{ ...parsed, id: EMPRESA_ADMIN_MIGRATED_ID }];
           localStorage.setItem(EMPRESA_ADMIN_KEY, JSON.stringify(empresasCache));
         }
       }
@@ -2380,12 +2385,12 @@ async function salvarEmpresa() {
     if (currentUser.username === ADMIN_USER) {
       const all = Array.isArray(empresasCache) ? [...empresasCache] : [];
       if (idx === '-1') {
-        obj.id = `${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
+        obj.id = generateLocalId();
         all.push(obj);
       } else {
         const found = all.findIndex(e => e.id === idx);
         if (found >= 0) { obj.id = idx; all[found] = obj; }
-        else { obj.id = `${Date.now()}_${Math.random().toString(36).slice(2,7)}`; all.push(obj); }
+        else { obj.id = generateLocalId(); all.push(obj); }
       }
       localStorage.setItem(EMPRESA_ADMIN_KEY, JSON.stringify(all));
     } else if (currentUser.id) {
