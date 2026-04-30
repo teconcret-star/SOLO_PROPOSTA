@@ -75,10 +75,13 @@ function formatNumeroProposta(num) {
 }
 
 // ─── Role helpers ─────────────────────────────────────────────────────────────
+function isDev()      { return currentUser?.username === ADMIN_USER; }
 function isAdmin()    { return currentUser?.role === 'administrador'; }
 function isGerente()  { return currentUser?.role === 'gerente'; }
 function isConsultor(){ return currentUser?.role === 'consultor_comercial'; }
 function podeGerenciarUsuarios() { return isAdmin() || isGerente(); }
+// Somente desenvolvedor e administradores cadastrados podem inativar/reativar usuários
+function podeInativarUsuarios()  { return isDev() || isAdmin(); }
 
 function aplicarFiltroRole(lista) {
   if (!currentUser || isAdmin()) return lista;
@@ -1156,9 +1159,11 @@ async function carregarUsuarios() {
       <td>${ativo ? '<span style="color:#27ae60">✅ Ativo</span>' : '<span style="color:#e74c3c">🚫 Inativo</span>'}</td>
       <td class="actions">
         <span onclick="editarUsuario(${i})" title="Editar">✏️</span>
-        ${ativo
-          ? `<span onclick="pedirSenhaParaInativar('${esc(u.id)}')" title="Tornar Inativo" aria-label="Tornar Inativo" style="cursor:pointer">🚫</span>`
-          : `<span onclick="reativarUsuario('${esc(u.id)}')" title="Reativar" aria-label="Reativar" style="cursor:pointer">✅</span>`
+        ${podeInativarUsuarios()
+          ? (ativo
+              ? `<span onclick="pedirSenhaParaInativar('${esc(u.id)}')" title="Tornar Inativo" aria-label="Tornar Inativo" style="cursor:pointer">🚫</span>`
+              : `<span onclick="reativarUsuario('${esc(u.id)}')" title="Reativar" aria-label="Reativar" style="cursor:pointer">✅</span>`)
+          : ''
         }
       </td>
     </tr>`;
@@ -1250,8 +1255,13 @@ function fecharModalConfirmarSenha() {
 }
 
 async function confirmarOperacaoComSenha() {
-  const senha  = (document.getElementById('modal_conf_senha')?.value || '').trim();
   const erroEl = document.getElementById('modal-conf-erro');
+  if (!podeInativarUsuarios()) {
+    if (erroEl) erroEl.textContent = 'Sem permissão para inativar usuários.';
+    return;
+  }
+
+  const senha  = (document.getElementById('modal_conf_senha')?.value || '').trim();
   if (!senha) { if (erroEl) erroEl.textContent = 'Informe sua senha.'; return; }
 
   let senhaCorreta = false;
@@ -1278,6 +1288,7 @@ async function confirmarOperacaoComSenha() {
 }
 
 async function inativarUsuario(id) {
+  if (!podeInativarUsuarios()) return alert('Sem permissão para inativar usuários.');
   try {
     await updateDoc(doc(db, 'usuarios', id), { ativo: false });
     await carregarUsuarios();
@@ -1288,6 +1299,7 @@ async function inativarUsuario(id) {
 }
 
 async function reativarUsuario(id) {
+  if (!podeInativarUsuarios()) return alert('Sem permissão para reativar usuários.');
   if (!confirm("Reativar este usuário?")) return;
   try {
     await updateDoc(doc(db, 'usuarios', id), { ativo: true });
