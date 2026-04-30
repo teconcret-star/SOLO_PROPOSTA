@@ -44,8 +44,10 @@ let empresasCache = [];
 let propostaItensTemp = [];
 let _pendingInactivateId = null;
 
+let _localIdCounter = 0;
 function generateLocalId() {
-  return `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+  _localIdCounter++;
+  return `${Date.now()}_${_localIdCounter}`;
 }
 
 // ─── Google Calendar OAuth state ─────────────────────────────────────────────
@@ -627,7 +629,8 @@ async function atualizarDadosClienteProposta() {
         const snap = await getDocs(query(collection(db, 'obras'), where('clienteId', '==', cliId)));
         snap.forEach(d => {
           const o = d.data();
-          selObra.innerHTML += `<option value="${d.id}" data-end="${esc(o.end||'')} ${esc(o.num||'')} ${esc(o.comp||'')}">${esc(o.nome||'')}</option>`;
+          const endParts = [o.end || '', o.num || '', o.comp || ''].filter(Boolean);
+          selObra.innerHTML += `<option value="${esc(d.id)}" data-end="${esc(endParts.join(', '))}">${esc(o.nome||'')}</option>`;
         });
       } catch(e) { console.error(e); }
     }
@@ -1302,7 +1305,10 @@ async function autoCEPObra(v) {
       const d = await r.json();
       if (!d.erro) {
         const endEl = document.getElementById('obra_end');
-        if (endEl) endEl.value = `${d.logradouro || ''}${d.bairro ? ', ' + d.bairro : ''}`;
+        if (endEl) {
+          const parts = [d.logradouro || '', d.bairro || ''].filter(Boolean);
+          endEl.value = parts.join(', ');
+        }
       }
     } catch (e) { console.error(e); }
   }
