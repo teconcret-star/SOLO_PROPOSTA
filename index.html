@@ -321,9 +321,38 @@
       <button class="btn" style="background:#555; margin-top:8px;" onclick="limparC()">LIMPAR</button>
       <button class="btn" style="background:#28a745; margin-top:8px;" onclick="exportarClientesExcel()">📥 EXPORTAR CLIENTES (EXCEL)</button>
 
+      <hr style="margin:15px 0 10px;">
+      <h4 style="color:var(--primary); margin:0 0 8px; font-size:1rem;"><span aria-hidden="true">🏗️</span> Obras do Cliente</h4>
+      <div class="field">
+        <label>Cliente para obras</label>
+        <select id="selCObra" class="field" onchange="carregarObrasCliente(this.value)">
+          <option value="">Selecionar cliente...</option>
+        </select>
+      </div>
+      <input type="hidden" id="idx_obra" value="-1">
+      <input type="text" id="obra_nome" class="field" placeholder="Nome / Descrição da Obra" style="margin-top:8px;">
+      <div class="row">
+        <div class="col"><input type="text" id="obra_cep" class="field" placeholder="CEP da Obra" inputmode="numeric" maxlength="9" oninput="mascaraCEP(this); autoCEPObra(this.value)"></div>
+        <div class="col"><input type="text" id="obra_num" class="field" placeholder="Nº"></div>
+      </div>
+      <input type="text" id="obra_end" class="field" placeholder="Endereço da Obra">
+      <input type="text" id="obra_comp" class="field" placeholder="Complemento">
+      <div class="row" style="margin-top:6px;">
+        <div class="col"><button class="btn" id="btn_obra" onclick="salvarObra()">SALVAR OBRA</button></div>
+        <div class="col"><button class="btn" style="background:#555;" onclick="limparObra()">LIMPAR</button></div>
+      </div>
+      <div class="table-container" style="margin-top:10px;">
+        <table class="app-table">
+          <thead><tr><th>Nome da Obra</th><th>Endereço</th><th>CEP</th><th>Ações</th></tr></thead>
+          <tbody id="listaObras"></tbody>
+        </table>
+      </div>
+      <hr style="margin:15px 0 10px;">
+
+      <input type="text" id="filtroCliente" class="field" placeholder="🔍 Filtrar clientes..." oninput="filtrarClientes()" style="margin-top:10px;">
       <div class="table-container">
         <table class="app-table">
-          <thead><tr><th>Data</th><th>Cliente</th><th>Ações</th></tr></thead>
+          <thead><tr><th>Data</th><th>Cliente</th><th>Doc</th><th>Telefone</th><th>Endereço</th><th>Filial</th><th>Ações</th></tr></thead>
           <tbody id="listaC"></tbody>
         </table>
       </div>
@@ -357,6 +386,15 @@
       </div>
 
       <div class="row">
+        <div class="col">
+          <label>Obra do Cliente</label>
+          <select id="selObra" class="field" onchange="atualizarEnderecoObra()">
+            <option value="">— Selecionar Obra (opcional) —</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row">
         <div class="col"><label>Perfil responsável</label><select id="selV" class="field"></select></div>
         <div class="col">
           <label>Status</label>
@@ -385,7 +423,8 @@
           <div class="col"><input type="number" id="vBase" placeholder="Preço R$"></div>
           <div class="col"><input type="number" id="margem" placeholder="Margem %" value="0"></div>
         </div>
-        <button class="btn" style="background:#555; font-size:0.8rem;" onclick="addLinha()">+ ADICIONAR ITEM</button>
+        <input type="hidden" id="idx_item" value="-1">
+        <button class="btn" id="btn_add_item" style="background:#555; font-size:0.8rem;" onclick="addLinha()">+ ADICIONAR ITEM</button>
         <table style="width:100%; margin-top:10px; font-size:0.8rem; background:white;">
           <thead>
             <tr style="background:#e9ecef; font-weight:bold;">
@@ -467,7 +506,7 @@
       <div class="table-container">
         <table class="app-table">
           <thead>
-            <tr><th>Nº</th><th>Data</th><th>Cliente</th><th>Perfil</th><th>Status</th><th>Ações</th></tr>
+            <tr><th>Nº</th><th>Data</th><th>Cliente</th><th>Obra</th><th>Perfil</th><th>Filial</th><th>Volume (m³)</th><th>Valor Total</th><th>Status</th><th>Ações</th></tr>
           </thead>
           <tbody id="listaP"></tbody>
         </table>
@@ -486,6 +525,11 @@
         <select id="selPropostaProg" class="field" onchange="carregarPropostaNaProgramacao(this.value)">
           <option value="">— Selecionar Proposta —</option>
         </select>
+      </div>
+
+      <div id="prog_itens_container" style="display:none; background:#f8f9fa; border:1px solid #ddd; border-radius:4px; padding:10px; margin-bottom:10px;">
+        <label style="font-weight:bold; color:var(--primary);">Itens da Proposta:</label>
+        <div id="prog_itens_lista"></div>
       </div>
 
       <div class="row">
@@ -633,6 +677,13 @@
         </div>
       </div>
       <button type="button" class="btn" style="background:#17a2b8;" onclick="salvarEmpresa()">SALVAR DADOS DA EMPRESA</button>
+      <input type="hidden" id="idx_empresa" value="-1">
+      <div class="table-container" style="margin-top:12px;">
+        <table class="app-table">
+          <thead><tr><th>Razão Social</th><th>CNPJ</th><th>Telefone</th><th>Email</th><th>Ações</th></tr></thead>
+          <tbody id="listaEmpresas"></tbody>
+        </table>
+      </div>
 
       <hr style="margin: 20px 0;">
 
@@ -680,7 +731,7 @@
 
       <div class="table-container" style="margin-top:16px;">
         <table class="app-table">
-          <thead><tr><th>Nome</th><th>Usuário</th><th>Perfil</th><th>Filial</th><th>Ações</th></tr></thead>
+          <thead><tr><th>Nome</th><th>Usuário</th><th>Perfil</th><th>Filial</th><th>Status</th><th>Ações</th></tr></thead>
           <tbody id="listaU"></tbody>
         </table>
       </div>
@@ -942,6 +993,17 @@
       <div class="anexo-date-box">Li as orientações acima e estou de acordo: ___/___/___</div>
       <div class="anexo-sig-box"><span id="anexo_nome_cliente"></span></div>
     </div>
+  </div>
+</div>
+
+<div id="modal-confirmar-senha" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; z-index:1000;">
+  <div class="modal-box">
+    <h3 style="color:#e74c3c;">⚠️ Confirmar Operação</h3>
+    <p style="font-size:0.9rem; color:#555;" id="modal-conf-msg">Para continuar, informe sua senha:</p>
+    <input type="password" id="modal_conf_senha" class="field" placeholder="Sua senha atual">
+    <div id="modal-conf-erro" style="color:#e74c3c; font-size:0.8rem; min-height:18px;"></div>
+    <button class="btn" style="background:#e74c3c; margin-top:8px;" onclick="confirmarOperacaoComSenha()">CONFIRMAR</button>
+    <button class="btn" style="background:#888; margin-top:6px;" onclick="fecharModalConfirmarSenha()">CANCELAR</button>
   </div>
 </div>
 
