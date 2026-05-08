@@ -2433,7 +2433,7 @@ async function salvarEmpresa() {
 
 // ─── Initialization ───────────────────────────────────────────────────────────
 async function inicializar() {
-  const fcks = ["10 MPa","15 MPa","20 MPa","25 MPa","30 Mpa (HE)","30 Mpa","30 Mpa (PISO)","40 MPa"];
+  const fcks = ["10 MPa","15 MPa","20 MPa","25 MPa","30 Mpa (HE)","30 Mpa","30 Mpa (PISO)","35 MPa","40 MPa"];
   const fs = document.getElementById('fck');
   if (fs) { fs.innerHTML = ''; fcks.forEach(v => fs.innerHTML += `<option value="${v}">${v}</option>`); }
 
