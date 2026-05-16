@@ -398,7 +398,7 @@
         <div class="col"><label>Perfil responsável</label><select id="selV" class="field"></select></div>
         <div class="col">
           <label>Status</label>
-          <select id="status" class="field" onchange="alternarMotivPerda(this.value); document.getElementById('status2').value=this.value">
+          <select id="status" class="field" onchange="alternarMotivPerda(this.value)">
             <option value="andamento">🟡 Em Andamento</option>
             <option value="fechada">🟢 Fechada</option>
             <option value="perdida">🔴 Perdida</option>
@@ -465,14 +465,6 @@
 
       <div class="row">
         <div class="col"><label>Responsável Obra</label><input type="text" id="contato_obra" placeholder="A/C: Nome"></div>
-        <div class="col">
-          <label>Status</label>
-          <select id="status2" class="field" onchange="document.getElementById('status').value=this.value; alternarMotivPerda(this.value)">
-            <option value="andamento">🟡 Em Andamento</option>
-            <option value="fechada">🟢 Fechada</option>
-            <option value="perdida">🔴 Perdida</option>
-          </select>
-        </div>
       </div>
       <textarea id="obs" class="field" rows="2" placeholder="Observações extras..."></textarea>
       <div class="motivo-perda-wrap" id="motivo_perda_wrap">
