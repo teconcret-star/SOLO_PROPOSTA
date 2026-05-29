@@ -607,14 +607,20 @@ async function excluirPerfil(id) {
 }
 
 async function carregarVendedor() {
-  const snap = await getDoc(doc(db, "perfil_vendedor", "principal"));
-  if (snap.exists()) {
-    const v = snap.data();
-    const vn = document.getElementById('v_nome');
-    const vc = document.getElementById('v_cel');
-    if (vn) vn.value = v.nome || '';
-    if (vc) vc.value = v.cel  || '';
+  const vn = document.getElementById('v_nome');
+  const vc = document.getElementById('v_cel');
+  if (vn) vn.value = '';
+  if (vc) vc.value = '';
+  if (!currentUser?.username) return;
+
+  const perfilUsuario = perfisCache.find(p => p.criadoPor === currentUser.username);
+  if (perfilUsuario) {
+    if (vn) vn.value = perfilUsuario.nome || '';
+    if (vc) vc.value = perfilUsuario.cel  || '';
+    return;
   }
+
+  alert('Por favor cadastre seu perfil, na aba com seu nome.');
 }
 
 // ─── Propostas ────────────────────────────────────────────────────────────────
@@ -1487,8 +1493,7 @@ function _preencherDocumentoImpressao() {
   document.getElementById('pr_roc').innerText      = get('cfg_roc');
   document.getElementById('pr_prazo').innerText    = get('cfg_prazo');
   document.getElementById('p_obs').innerText       = get('obs') || "A COMBINAR";
-  const nomeUsuarioLogado = (currentUser?.nome || '').trim();
-  const nomeResponsavel = (nomeUsuarioLogado || (vNome || '').trim() || "RESPONSÁVEL").toUpperCase();
+  const nomeResponsavel = ((vNome || '').trim()).toUpperCase();
   document.getElementById('p_vend').innerText      = nomeResponsavel;
   document.getElementById('p_v_cel').innerText     = vCel;
 
