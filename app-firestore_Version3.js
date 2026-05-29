@@ -192,6 +192,9 @@ function configurarUI() {
   document.getElementById('header-role').textContent   = labelRole(currentUser.role);
   document.getElementById('header-filial').textContent = currentUser.filial;
 
+  const navPerfil = document.getElementById('nav-perfil');
+  if (navPerfil) navPerfil.textContent = currentUser.nome || 'PERFIL';
+
   const navU = document.getElementById('nav-usuarios');
   if (navU) navU.style.display = podeGerenciarUsuarios() ? '' : 'none';
 
