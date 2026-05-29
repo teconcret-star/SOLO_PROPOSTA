@@ -1487,7 +1487,9 @@ function _preencherDocumentoImpressao() {
   document.getElementById('pr_roc').innerText      = get('cfg_roc');
   document.getElementById('pr_prazo').innerText    = get('cfg_prazo');
   document.getElementById('p_obs').innerText       = get('obs') || "A COMBINAR";
-  document.getElementById('p_vend').innerText      = vNome.toUpperCase();
+  const nomeUsuarioLogado = (currentUser?.nome || '').trim();
+  const nomeResponsavel = (nomeUsuarioLogado || (vNome || '').trim() || "RESPONSÁVEL").toUpperCase();
+  document.getElementById('p_vend').innerText      = nomeResponsavel;
   document.getElementById('p_v_cel').innerText     = vCel;
 
   const anexoNome = document.getElementById('anexo_nome_cliente');
