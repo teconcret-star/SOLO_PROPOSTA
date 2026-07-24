@@ -1506,6 +1506,17 @@ function _preencherDocumentoImpressao() {
 function imprimir() {
   try {
     if (!_preencherDocumentoImpressao()) return;
+    const app    = document.getElementById('app');
+    const docImp = document.getElementById('doc-impressao');
+    const prevApp = app.style.display;
+    app.style.display    = 'none';
+    docImp.style.display = 'block';
+    function restore() {
+      app.style.display    = prevApp;
+      docImp.style.display = '';
+      window.removeEventListener('afterprint', restore);
+    }
+    window.addEventListener('afterprint', restore);
     setTimeout(() => window.print(), 100);
   } catch (e) {
     alert("Erro ao gerar impressão: " + e.message);
@@ -1551,10 +1562,19 @@ function enviarWhatsAppComPDF() {
       'Após fechar a janela de impressão, o WhatsApp será aberto automaticamente para envio da mensagem.\n' +
       'Você poderá então anexar o PDF salvo na conversa do WhatsApp.'
     );
-    setTimeout(() => {
-      window.print();
+    const app    = document.getElementById('app');
+    const docImp = document.getElementById('doc-impressao');
+    const prevApp = app.style.display;
+    app.style.display    = 'none';
+    docImp.style.display = 'block';
+    function restore() {
+      app.style.display    = prevApp;
+      docImp.style.display = '';
+      window.removeEventListener('afterprint', restore);
       enviarWhatsApp();
-    }, 100);
+    }
+    window.addEventListener('afterprint', restore);
+    setTimeout(() => window.print(), 100);
   } catch (e) {
     alert("Erro: " + e.message);
   }
