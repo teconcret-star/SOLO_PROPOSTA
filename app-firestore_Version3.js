@@ -1511,7 +1511,7 @@ function _abrirJanelaImpressao(autoFechar, callback) {
   const impHTML   = docImpEl.outerHTML.replace(/src="logotipo\.webp"/g, `src="${logoSrc}"`);
   const anexoHTML = docAnexoEl.outerHTML;
 
-  const win = window.open('', '_blank', 'width=850,height=700');
+  const win = window.open('', '_blank', 'width=850,height=700,resizable=yes');
   if (!win) {
     alert('Por favor, permita pop-ups neste site para imprimir.');
     return null;
