@@ -1503,10 +1503,77 @@ function _preencherDocumentoImpressao() {
   return true;
 }
 
+function _abrirJanelaImpressao(autoFechar, callback) {
+  const logoSrc = new URL('logotipo.webp', window.location.href).href;
+  const docImpEl   = document.getElementById('doc-impressao');
+  const docAnexoEl = document.getElementById('doc-anexo');
+
+  const impHTML   = docImpEl.outerHTML.replace(/src="logotipo\.webp"/g, `src="${logoSrc}"`);
+  const anexoHTML = docAnexoEl.outerHTML;
+
+  const win = window.open('', '_blank', 'width=850,height=700,resizable=yes');
+  if (!win) {
+    alert('Por favor, permita pop-ups neste site para imprimir.');
+    return null;
+  }
+
+  win.document.write(`<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Proposta Solomix</title>
+  <style>
+    * { box-sizing: border-box; font-family: Arial, sans-serif; }
+    body { margin: 0; padding: 10px; background: white; color: black; font-size: 11px; line-height: 1.3; }
+    @page { margin: 0.5cm; size: A4; }
+    #doc-impressao { padding: 10px; }
+    #doc-anexo { padding: 10px; font-size: 11px; line-height: 1.5; page-break-before: always; }
+    .print-header { border-bottom: 3px solid #2d6a4f; padding-bottom: 14px; margin-bottom: 16px; }
+    .print-header-inner { display: flex; align-items: flex-start; justify-content: space-between; }
+    .print-logo { width: 130px; height: 130px; object-fit: contain; flex-shrink: 0; }
+    .print-empresa-info { text-align: right; font-size: 10px; line-height: 1.7; }
+    .print-emp-nome { font-size: 13px; font-weight: bold; color: #2d6a4f; margin-bottom: 2px; }
+    .print-table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+    .print-table th { background: #e9ecef; color: #333; border: 1px solid black; padding: 6px; font-weight: bold; }
+    .print-table td { border: 1px solid black; padding: 6px; text-align: center; }
+    .section-title { display: block; font-weight: bold; text-decoration: underline; margin-top: 10px; text-transform: uppercase; background: #eee; padding: 2px 4px; }
+    .list-item { margin: 2px 0; }
+    .signature-area { margin-top: 30px; display: flex; justify-content: space-between; }
+    .sig-box { width: 45%; border-top: 1px solid black; text-align: center; padding-top: 5px; }
+    .anexo-title { font-weight: bold; text-align: center; font-size: 12px; margin-bottom: 14px; text-transform: uppercase; line-height: 1.5; }
+    .anexo-item { margin-bottom: 6px; text-align: justify; }
+    .anexo-sig-area { margin-top: 30px; }
+    .anexo-sig-line { margin-top: 40px; display: flex; justify-content: space-between; align-items: flex-end; }
+    .anexo-sig-box { width: 55%; border-top: 1px solid black; text-align: center; padding-top: 5px; font-size: 11px; }
+    .anexo-date-box { font-size: 11px; }
+  </style>
+</head>
+<body>
+${impHTML}
+${anexoHTML}
+</body>
+</html>`);
+  win.document.close();
+  win.focus();
+
+  win.onload = function () {
+    win.print();
+    if (autoFechar || callback) {
+      win.onafterprint = function () {
+        if (autoFechar) win.close();
+        if (typeof callback === 'function') callback();
+      };
+    }
+  };
+
+  return win;
+}
+
 function imprimir() {
   try {
     if (!_preencherDocumentoImpressao()) return;
-    setTimeout(() => window.print(), 100);
+    _abrirJanelaImpressao(true);
   } catch (e) {
     alert("Erro ao gerar impressão: " + e.message);
   }
@@ -1551,10 +1618,7 @@ function enviarWhatsAppComPDF() {
       'Após fechar a janela de impressão, o WhatsApp será aberto automaticamente para envio da mensagem.\n' +
       'Você poderá então anexar o PDF salvo na conversa do WhatsApp.'
     );
-    setTimeout(() => {
-      window.print();
-      enviarWhatsApp();
-    }, 100);
+    _abrirJanelaImpressao(true, enviarWhatsApp);
   } catch (e) {
     alert("Erro: " + e.message);
   }
